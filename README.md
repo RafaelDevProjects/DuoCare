@@ -619,44 +619,16 @@ Todos os erros seguem o formato padrão do `GlobalExceptionHandler`:
 }
 ```
 
----
-
-## Script SQL — Banco de Dados Oracle
-
-Para criar as tabelas execute o script `careplus_oracle_schema.sql` no SQL Developer ou via terminal:
-
-```sql
--- Principais tabelas criadas:
--- CP_USERS, CP_LIGAS, CP_CATEGORIAS_DESAFIO, CP_DESAFIOS
--- CP_USER_DESAFIOS, CP_CONEXOES, CP_POSTS, CP_CURTIDAS
--- CP_COMENTARIOS, CP_HISTORICO_PONTOS
-
--- Seeds já incluídos no script:
--- 6 ligas: Bronze, Prata, Ouro, Platina, Diamante, Safira
--- 4 categorias: CORRIDA, HIDRATACAO, MEDITACAO, NUTRICAO
-```
-
----
-
-## Testando com Postman
-
-Importe o arquivo `careplus_postman_collection.json` no Postman:
-
-1. Abra o Postman → **Import** → selecione o arquivo
-2. Execute **Register** para criar um usuário
-3. Execute **Login** — o token é salvo automaticamente na variável `{{token}}`
-4. Todos os outros endpoints já usam `{{token}}` nos headers automaticamente
-
----
-
 ## Integrantes
 
 | Nome | RM |
 |---|---|
 | Rafael Almeida | RM554019 |
+| Giovana Franco | RM553701 |
+| Rafael Jorge | RM552765 |
 
 ---
 
 <p align="center">
-  Desenvolvido com ❤️ para a Care Plus — FIAP 2024
+  Desenvolvido com ❤️ para a Care Plus — FIAP 2026
 </p>
