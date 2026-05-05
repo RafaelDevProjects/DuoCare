@@ -277,11 +277,8 @@ Edite `src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521/orcl
-spring.datasource.username=SEU_RM
-spring.datasource.password=SUA_SENHA
-
-careplus.jwt.secret=SuaChaveSecretaComMinimode32Caracteres
-careplus.jwt.expiration-ms=86400000
+spring.datasource.username=SEU_RM (LOGIN ENVIADO VIA TEAMS)
+spring.datasource.password=SUA_SENHA (SENHA ENVIADA VIA TEAMS)
 ```
 
 ### Executando
