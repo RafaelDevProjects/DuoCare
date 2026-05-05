@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/mascote.png" width="120" alt="Care Plus Mascote"/>
+  <img src="app/duocare-app/assets/mascote.png" width="120" alt="Care Plus Mascote"/>
 </p>
 
 <h1 align="center">Care Plus</h1>
