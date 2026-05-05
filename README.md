@@ -285,14 +285,10 @@ spring.datasource.password=SUA_SENHA (SENHA ENVIADA VIA TEAMS)
 
 ```bash
 # Acesse a pasta do backend
-cd careplus-api
+cd api/careplus/careplus
 
 # Execute com Maven
 mvn spring-boot:run
-
-# Ou gere o JAR e execute
-mvn clean package -DskipTests
-java -jar target/careplus-0.0.1-SNAPSHOT.jar
 ```
 
 A API estará disponível em: `http://localhost:8080`
