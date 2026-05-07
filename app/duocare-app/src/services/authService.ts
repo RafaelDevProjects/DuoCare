@@ -28,4 +28,11 @@ export const authService = {
     const response = await api.post('/api/auth/login', data);
     return response.data;
   },
+
+  async getMe(): Promise<{ userId: number; nome: string; pontos: number }> {
+    const response = await api.get('/api/users/me');
+    // UserResponse do backend retorna "id", mapeamos para "userId"
+    const { id, nome, pontos } = response.data;
+    return { userId: id, nome, pontos };
+  },
 };

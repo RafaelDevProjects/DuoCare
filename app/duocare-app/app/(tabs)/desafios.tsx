@@ -200,7 +200,6 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   return (
     <Animated.View style={[styles.cardDisp, { opacity: fadeAnim, transform: [{ translateY: slideAnim }, { scale: scaleAnim }] }]}>
       <View style={styles.cardDispTop}>
-        {/* Ícone SVG da categoria */}
         <View style={styles.cardDispIconWrapper}>
           <CategoriaIcon size={28} color={colors.primary} strokeWidth={1.8} />
         </View>
@@ -239,7 +238,7 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
 
 // ─── Tela principal ─────────────────────────────────────────
 export default function DesafiosScreen() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [aba, setAba] = useState<'ativos' | 'disponiveis'>('ativos');
   const [ativos, setAtivos] = useState<UserDesafio[]>([]);
   const [disponiveis, setDisponiveis] = useState<Desafio[]>([]);
@@ -259,13 +258,15 @@ export default function DesafiosScreen() {
 
   async function carregar() {
     try {
+      // 🔁 Atualiza os pontos do usuário no contexto antes de carregar os desafios
+      await refreshUser();
       const [meusRes, dispRes] = await Promise.all([
         desafioService.meusDesafios(),
         desafioService.listarDisponiveis(),
       ]);
       setAtivos(meusRes);
       setDisponiveis(dispRes);
-    } catch {
+    } catch (error) {
       Alert.alert('Erro', 'Não foi possível carregar os desafios.');
     } finally {
       setLoading(false);

@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { ligaService, LigaInfo } from '../../src/services/ligaService';
+import { desafioService } from '../../src/services/desafioService';
+import { conexaoService } from '../../src/services/conexaoService';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme/colors';
 
@@ -57,6 +59,8 @@ export default function PerfilScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [liga, setLiga] = useState<LigaInfo | null>(null);
+  const [totalDesafiosConcluidos, setTotalDesafiosConcluidos] = useState(0);
+  const [totalConexoes, setTotalConexoes] = useState(0);
   const [loading, setLoading] = useState(true);
   const [modalEditar, setModalEditar] = useState(false);
   const [nome, setNome] = useState(user?.nome ?? '');
@@ -80,15 +84,28 @@ export default function PerfilScreen() {
       ])
     ).start();
 
-    carregarLiga();
+    carregarEstatisticas();
   }, []);
 
-  async function carregarLiga() {
+  async function carregarEstatisticas() {
     try {
-      const data = await ligaService.minhaLiga();
-      setLiga(data);
-    } catch {
-      // silencioso
+      // Busca liga, desafios e conexões em paralelo
+      const [ligaData, meusDesafios, conexoes] = await Promise.all([
+        ligaService.minhaLiga(),
+        desafioService.meusDesafios(),
+        conexaoService.listar(),
+      ]);
+      setLiga(ligaData);
+      
+      // Conta quantos desafios estão concluídos
+      const concluidos = meusDesafios.filter(d => d.status === 'CONCLUIDO').length;
+      setTotalDesafiosConcluidos(concluidos);
+      
+      // Total de conexões (amigos aceitos)
+      setTotalConexoes(conexoes.length);
+    } catch (error) {
+      // Se algum serviço falhar, apenas não atualiza (valores continuam 0)
+      console.error('Erro ao carregar estatísticas do perfil:', error);
     } finally {
       setLoading(false);
     }
@@ -106,6 +123,8 @@ export default function PerfilScreen() {
       });
       Alert.alert('✅ Perfil atualizado!', 'Suas informações foram salvas.');
       setModalEditar(false);
+      // Recarrega os dados para atualizar possíveis mudanças
+      carregarEstatisticas();
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar o perfil.');
     } finally {
@@ -196,8 +215,8 @@ export default function PerfilScreen() {
         <View style={styles.statsGrid}>
           <StatCard emoji="⭐" valor={(user?.pontos ?? 0).toLocaleString()} label="Pontos"    delay={0}   />
           <StatCard emoji="🏅" valor={liga?.ligaNome ?? '—'}              label="Liga"      delay={100} />
-          <StatCard emoji="🎯" valor="—"                                  label="Desafios"  delay={200} />
-          <StatCard emoji="🤝" valor="—"                                  label="Conexões"  delay={300} />
+          <StatCard emoji="🎯" valor={totalDesafiosConcluidos}             label="Desafios"  delay={200} />
+          <StatCard emoji="🤝" valor={totalConexoes}                       label="Conexões"  delay={300} />
         </View>
 
         {/* Menu de ações */}
@@ -295,7 +314,7 @@ export default function PerfilScreen() {
   );
 }
 
-// ─── Estilos ────────────────────────────────────────────────
+// ─── Estilos (inalterados) ───────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center' },

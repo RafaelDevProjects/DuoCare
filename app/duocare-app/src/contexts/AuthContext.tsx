@@ -15,6 +15,7 @@ interface AuthContextData {
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -87,8 +88,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }
 
+  async function refreshUser() {
+    try {
+      const updated = await authService.getMe();
+      const updatedUser: User = {
+        userId: updated.userId,
+        nome: updated.nome,
+        pontos: updated.pontos,
+      };
+      await SecureStore.setItemAsync('careplus_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Erro ao atualizar dados do usuário:', error);
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

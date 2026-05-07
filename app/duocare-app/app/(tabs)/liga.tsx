@@ -197,7 +197,7 @@ function Podio({ top3 }: { top3: RankingItem[] }) {
     });
   }, []);
 
-  const alturas = [100, 130, 80];
+  const alturas = [130, 100, 80];
   const ordem   = [1, 0, 2];
 
   return (

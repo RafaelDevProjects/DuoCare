@@ -314,12 +314,27 @@ export default function ConexoesScreen() {
     catch { Alert.alert('Erro', 'Não foi possível recusar a solicitação.'); }
   }
 
-  async function handleRemover(conexaoId: number) {
-    try {
-      await conexaoService.remover(conexaoId);
-      setConexoes(prev => prev.filter(c => c.id !== conexaoId));
-    } catch { Alert.alert('Erro', 'Não foi possível remover a conexão.'); }
+async function handleRemover(conexaoId: number) {
+  try {
+    // Pega o userId da pessoa antes de remover
+    const conexao = conexoes.find(c => c.id === conexaoId);
+
+    await conexaoService.remover(conexaoId);
+
+    setConexoes(prev => prev.filter(c => c.id !== conexaoId));
+
+    // Limpa do Set para permitir reconectar
+    if (conexao) {
+      setSolicitados(prev => {
+        const next = new Set(prev);
+        next.delete(conexao.userId); // ou o campo que representa o userId da pessoa
+        return next;
+      });
+    }
+  } catch {
+    Alert.alert('Erro', 'Não foi possível remover a conexão.');
   }
+}
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
