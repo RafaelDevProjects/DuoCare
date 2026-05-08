@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/duocare-app/assets/mascote.png" width="120" alt="Care Plus Mascote"/>
+  <img src="app\duocare-app\assets\mascote.png" width="120" alt="Care Plus Mascote"/>
 </p>
 
 <h1 align="center">Care Plus</h1>
@@ -32,11 +32,91 @@ O **Care Plus** é um aplicativo desenvolvido para a empresa de convênios médi
 
 ```
 careplus/
-├── careplus-api/          ← Backend Java Spring Boot
-└── duocare-app/           ← Frontend React Native (Expo)
+├── api/careplus/careplus   ← Backend Java Spring Boot
+└── app/duocare-app           ← Frontend React Native (Expo)
 ```
 
 ---
+
+# Como executar
+1. Clone o repositorio
+```
+git clone https://github.com/RafaelDevProjects/DuoCare.git
+```
+2.  Executar o Backend (API) para depois inicializar o app Mobile.
+
+### Pré-requisitos
+
+- Java 21+
+- Maven 3.9+
+- Oracle Database (FIAP: `oracle.fiap.com.br:1521/orcl`)
+- Node.js 18+
+- npm ou yarn
+- Expo Go instalado no celular **ou** Android Emulator configurado
+
+### Configuração
+
+Edite `src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521/orcl
+spring.datasource.username=SEU_RM
+spring.datasource.password=SUA_SENHA
+
+careplus.jwt.secret=SuaChaveSecretaComMinimode32Caracteres
+careplus.jwt.expiration-ms=86400000
+```
+
+## Executando API
+
+```bash
+# Acesse a pasta do backend
+cd api/careplus/careplus
+
+# Execute com Maven
+mvn spring-boot:run
+
+```
+
+A API estará disponível em: `http://localhost:8080`
+
+### Swagger UI
+
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+> No Swagger, clique em **Authorize** 🔒, cole o token retornado pelo login e todos os endpoints protegidos passarão a funcionar.
+
+- Mais abaixo a documentação possui exemplos de corpos de requisição e endpoints da API
+
+
+
+
+
+
+
+## Executando Mobile
+
+### Instalação
+
+```bash
+# Entre na pasta do app
+cd app/duocare-app
+
+# Instale as dependências
+npm install
+```
+### Executando
+
+```bash
+# Inicie o servidor de desenvolvimento
+npx expo start --clear
+
+# Opções após iniciar:
+# Pressione [a] → abre no emulador Android
+# Pressione [i] → abre no simulador iOS
+```
 
 # 📱 Mobile — React Native (Expo)
 
@@ -97,55 +177,6 @@ duocare-app/
 └── package.json
 ```
 
-## Como Executar
-
-### Pré-requisitos
-
-- Node.js 18+
-- npm ou yarn
-- Expo Go instalado no celular **ou** Android Emulator configurado
-
-### Instalação
-
-```bash
-# Entre na pasta do app
-cd app
-cd duocare-app
-
-# Instale as dependências
-npx expo install expo-router expo-status-bar react-native-safe-area-context react-native-screens expo-secure-store react-native-svg
-
-npm install axios --legacy-peer-deps
-```
-
-### Configuração da API
-
-Edite o arquivo `src/services/api.ts` e ajuste a URL base:
-
-```typescript
-// Emulador Android
-const API_URL = 'http://10.0.2.2:8080';
-
-// Dispositivo físico (substitua pelo IP da sua máquina)
-const API_URL = 'http://192.168.1.XXX:8080';
-
-// iOS Simulator
-const API_URL = 'http://localhost:8080';
-```
-
-> Para descobrir seu IP local no Windows: `ipconfig` → procure "Endereço IPv4"
-
-### Executando
-
-```bash
-# Inicie o servidor de desenvolvimento
-npx expo start --clear
-
-# Opções após iniciar:
-# Pressione [a] → abre no emulador Android
-# Pressione [i] → abre no simulador iOS
-# Escaneie o QR Code → abre no Expo Go do celular
-```
 
 ## Funcionalidades por Tela
 
@@ -263,44 +294,6 @@ careplus-api/
 └── src/main/resources/
     └── application.properties           ← Conexão Oracle, JWT secret, Springdoc
 ```
-
-## Como Executar
-
-### Pré-requisitos
-
-- Java 21+
-- Maven 3.9+
-- Oracle Database (FIAP: `oracle.fiap.com.br:1521/orcl`)
-
-### Configuração
-
-Edite `src/main/resources/application.properties`:
-
-```properties
-spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521/orcl
-spring.datasource.username=SEU_RM (LOGIN ENVIADO VIA TEAMS)
-spring.datasource.password=SUA_SENHA (SENHA ENVIADA VIA TEAMS)
-```
-
-### Executando
-
-```bash
-# Acesse a pasta do backend
-cd api/careplus/careplus
-
-# Execute com Maven
-mvn spring-boot:run
-```
-
-A API estará disponível em: `http://localhost:8080`
-
-### Swagger UI
-
-```
-http://localhost:8080/swagger-ui/index.html
-```
-
-> No Swagger, clique em **Authorize** 🔒, cole o token retornado pelo login e todos os endpoints protegidos passarão a funcionar.
 
 ---
 
@@ -620,16 +613,46 @@ Todos os erros seguem o formato padrão do `GlobalExceptionHandler`:
 }
 ```
 
+---
+
+## Script SQL — Banco de Dados Oracle
+
+Para criar as tabelas execute o script `careplus_oracle_schema.sql` no SQL Developer ou via terminal:
+
+```sql
+-- Principais tabelas criadas:
+-- CP_USERS, CP_LIGAS, CP_CATEGORIAS_DESAFIO, CP_DESAFIOS
+-- CP_USER_DESAFIOS, CP_CONEXOES, CP_POSTS, CP_CURTIDAS
+-- CP_COMENTARIOS, CP_HISTORICO_PONTOS
+
+-- Seeds já incluídos no script:
+-- 6 ligas: Bronze, Prata, Ouro, Platina, Diamante, Safira
+-- 4 categorias: CORRIDA, HIDRATACAO, MEDITACAO, NUTRICAO
+```
+
+---
+
+## Testando com Postman
+
+Importe o arquivo `careplus_postman_collection.json` no Postman:
+
+1. Abra o Postman → **Import** → selecione o arquivo
+2. Execute **Register** para criar um usuário
+3. Execute **Login** — o token é salvo automaticamente na variável `{{token}}`
+4. Todos os outros endpoints já usam `{{token}}` nos headers automaticamente
+
+---
+
 ## Integrantes
 
 | Nome | RM |
 |---|---|
 | Rafael Almeida | RM554019 |
-| Giovana Franco | RM553701 |
+| Giovanna Franco | RM553701  |
 | Rafael Jorge | RM552765 |
 
 ---
 
 <p align="center">
-  Desenvolvido com ❤️ para a Care Plus — FIAP 2026
+  Desenvolvido com ❤️ para a Care Plus — FIAP 2024
 </p>
