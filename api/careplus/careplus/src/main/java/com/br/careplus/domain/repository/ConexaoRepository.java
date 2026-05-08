@@ -37,4 +37,12 @@ public interface ConexaoRepository extends JpaRepository<Conexao, Long> {
         OR (c.solicitante.id = :userId2 AND c.receptor.id = :userId1)
         """)
     Optional<Conexao> findEntreUsuarios(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    @Query("""
+        SELECT c FROM Conexao c
+        JOIN FETCH c.solicitante
+        JOIN FETCH c.receptor
+        WHERE c.id = :id
+        """)
+    Optional<Conexao> findByIdComUsuarios(@Param("id") Long id);
 }

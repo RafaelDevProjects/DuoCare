@@ -109,6 +109,7 @@ duocare-app/
 
 ```bash
 # Entre na pasta do app
+cd app
 cd duocare-app
 
 # Instale as dependências

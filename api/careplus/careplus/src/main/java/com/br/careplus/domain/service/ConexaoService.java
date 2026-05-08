@@ -48,7 +48,8 @@ public class ConexaoService {
 
     @Transactional
     public Conexao responderSolicitacao(Long conexaoId, Long userId, boolean aceitar) {
-        Conexao conexao = conexaoRepository.findById(conexaoId)
+
+        Conexao conexao = conexaoRepository.findByIdComUsuarios(conexaoId)
                 .orElseThrow(() -> new IllegalArgumentException("Solicitação não encontrada."));
 
         if (!conexao.getReceptor().getId().equals(userId)) {
