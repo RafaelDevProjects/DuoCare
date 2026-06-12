@@ -1,5 +1,4 @@
 {
-  
   "expo": {
     "name": "duocare-app",
     "slug": "duocare-app",
@@ -23,7 +22,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rafael_almeida_sigoli.duocareapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"

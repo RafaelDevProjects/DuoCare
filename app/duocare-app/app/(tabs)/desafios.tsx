@@ -2,6 +2,7 @@
 //  app/(tabs)/desafios.tsx — com ícones SVG
 // ============================================================
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSubscription } from '../../src/contexts/SocketContext';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert, Modal,
@@ -249,12 +250,38 @@ export default function DesafiosScreen() {
   const tabSlide   = useRef(new Animated.Value(-20)).current;
   const idsAtivos  = new Set(ativos.map((a) => a.desafioId));
 
+  // ✅ WebSocket: escuta conclusão de desafios em tempo real
+  useSubscription(
+    `/topic/desafios/${user?.userId}`,
+    useCallback((payload) => {
+      if (payload.tipo === 'DESAFIO_CONCLUIDO') {
+        const udConcluido = payload.dados as UserDesafio;
+
+        // Atualiza o card do desafio na lista (status e pontuação)
+        setAtivos(prev =>
+          prev.map(ud => ud.id === udConcluido.id ? udConcluido : ud)
+        );
+
+        // Atualiza pontos do usuário no contexto de autenticação
+        refreshUser();
+
+        Alert.alert(
+          '🏆 Desafio concluído!',
+          payload.mensagem,
+          [{ text: 'Eba!', style: 'default' }]
+        );
+      }
+    }, [])
+  );
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }),
       Animated.timing(tabSlide,   { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
+
+  
 
   async function carregar() {
     try {

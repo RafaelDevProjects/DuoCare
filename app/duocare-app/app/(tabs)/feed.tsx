@@ -1,5 +1,5 @@
 // ============================================================
-//  app/(tabs)/feed.tsx — com ícones SVG
+//  app/(tabs)/feed.tsx
 // ============================================================
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -13,9 +13,9 @@ import { postService, Post, Comentario } from '../../src/services/postService';
 import { colors } from '../../src/theme/colors';
 import { IconComment, IconPlus } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Path, Line, Circle, Polyline, G } from 'react-native-svg';
+import { useSubscription } from '../../src/contexts/SocketContext'; // ✅ novo
 
-// ─── Ícones locais ────────────────────────────────────────────
-
+// ─── (todos os ícones locais permanecem iguais) ───────────────
 function IconHeart({ size = 20, filled = false, color = '#6B7280' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#EF4444' : 'none'}>
@@ -29,7 +29,6 @@ function IconHeart({ size = 20, filled = false, color = '#6B7280' }) {
     </Svg>
   );
 }
-
 function IconSend({ size = 20, color = '#fff' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -38,7 +37,6 @@ function IconSend({ size = 20, color = '#fff' }) {
     </Svg>
   );
 }
-
 function IconDots({ size = 18, color = '#6B7280' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -48,7 +46,6 @@ function IconDots({ size = 18, color = '#6B7280' }) {
     </Svg>
   );
 }
-
 function IconGlobe({ size = 16, color = '#6B7280' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -58,7 +55,6 @@ function IconGlobe({ size = 16, color = '#6B7280' }) {
     </Svg>
   );
 }
-
 function IconUsers({ size = 16, color = '#6B7280' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -69,7 +65,6 @@ function IconUsers({ size = 16, color = '#6B7280' }) {
     </Svg>
   );
 }
-
 function IconClose({ size = 14, color = '#6B7280' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -78,7 +73,7 @@ function IconClose({ size = 14, color = '#6B7280' }) {
     </Svg>
   );
 }
-
+import { Rect } from 'react-native-svg';
 function IconEmpty({ size = 64, color = '#D1D5DB' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 64 64" fill="none">
@@ -90,10 +85,7 @@ function IconEmpty({ size = 64, color = '#D1D5DB' }) {
   );
 }
 
-// ─── Precisamos importar Rect do react-native-svg ────────────
-import { Rect } from 'react-native-svg';
-
-// ─── Avatar ─────────────────────────────────────────────────
+// ─── Avatar ──────────────────────────────────────────────────
 function Avatar({ nome, size = 40 }: { nome: string; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
@@ -103,7 +95,6 @@ function Avatar({ nome, size = 40 }: { nome: string; size?: number }) {
   );
 }
 
-// ─── Tempo relativo ─────────────────────────────────────────
 function tempoRelativo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
@@ -114,7 +105,7 @@ function tempoRelativo(iso: string): string {
   return `${Math.floor(h / 24)}d`;
 }
 
-// ─── Modal de comentários ─────────────────────────────────────
+// ─── Modal de comentários (inalterado) ───────────────────────
 function ModalComentarios({ post, visible, onClose, onUpdate }: {
   post: Post | null; visible: boolean;
   onClose: () => void; onUpdate: (p: Post) => void;
@@ -156,7 +147,6 @@ function ModalComentarios({ post, visible, onClose, onUpdate }: {
               <IconClose size={14} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
-
           {loading ? (
             <View style={styles.centered}><ActivityIndicator color={colors.primary} /></View>
           ) : comentarios.length === 0 ? (
@@ -184,7 +174,6 @@ function ModalComentarios({ post, visible, onClose, onUpdate }: {
               )}
             />
           )}
-
           <View style={styles.inputComentarioWrapper}>
             <TextInput
               style={styles.inputComentario}
@@ -212,13 +201,12 @@ function ModalComentarios({ post, visible, onClose, onUpdate }: {
   );
 }
 
-// ─── Card de post ─────────────────────────────────────────────
+// ─── Card de post (inalterado) ────────────────────────────────
 function CardPost({ post, onCurtir, onComentar, onDelete, meId }: {
   post: Post; onCurtir: (id: number) => void;
   onComentar: (p: Post) => void; onDelete: (id: number) => void; meId: number;
 }) {
   const isMeu = post.userId === meId;
-
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -239,9 +227,7 @@ function CardPost({ post, onCurtir, onComentar, onDelete, meId }: {
           </TouchableOpacity>
         )}
       </View>
-
       <Text style={styles.cardConteudo}>{post.conteudo}</Text>
-
       <View style={styles.cardFooter}>
         <TouchableOpacity style={styles.actionBtn} onPress={() => onCurtir(post.id)}>
           <IconHeart size={20} filled={post.curtidoPorMim} />
@@ -258,7 +244,7 @@ function CardPost({ post, onCurtir, onComentar, onDelete, meId }: {
   );
 }
 
-// ─── Modal novo post ──────────────────────────────────────────
+// ─── Modal novo post (inalterado) ─────────────────────────────
 function ModalNovoPost({ visible, onClose, onPublicar }: {
   visible: boolean; onClose: () => void;
   onPublicar: (texto: string) => Promise<void>;
@@ -310,6 +296,18 @@ function ModalNovoPost({ visible, onClose, onPublicar }: {
   );
 }
 
+// ─── Banner "novos posts" ✅ novo ─────────────────────────────
+function BannerNovosPosts({ count, onPress }: { count: number; onPress: () => void }) {
+  if (count === 0) return null;
+  return (
+    <TouchableOpacity style={styles.bannerNovos} onPress={onPress} activeOpacity={0.85}>
+      <Text style={styles.bannerNovosText}>
+        ↑ {count} novo{count > 1 ? 's' : ''} post{count > 1 ? 's' : ''}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Tela Feed ────────────────────────────────────────────────
 export default function FeedScreen() {
   const { user } = useAuth();
@@ -320,18 +318,55 @@ export default function FeedScreen() {
   const [postSelecionado, setPostSelecionado] = useState<Post | null>(null);
   const [aba, setAba] = useState<'global' | 'conexoes'>('global');
 
+  // ✅ controle de posts novos recebidos via WebSocket
+  const [novosPosts, setNovosPosts] = useState<Post[]>([]);
+
   async function carregar() {
     try {
       const data = aba === 'global'
         ? await postService.feedGlobal()
         : await postService.feedConexoes();
       setPosts(data);
+      setNovosPosts([]); // limpa o banner ao recarregar
     } catch { Alert.alert('Erro', 'Não foi possível carregar o feed.'); }
     finally { setLoading(false); setRefreshing(false); }
   }
 
   useEffect(() => { setLoading(true); carregar(); }, [aba]);
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, [aba]);
+
+  // ✅ WebSocket: subscreve o tópico de feed do usuário logado
+  useSubscription(
+    `/topic/feed/${user?.userId}`,
+    useCallback((payload) => {
+      if (payload.tipo === 'NOVO_POST') {
+        const novoPost = payload.dados as Post;
+        // Acumula no banner (não insere direto para não pular a lista)
+        setNovosPosts(prev => {
+          const jaExiste = prev.some(p => p.id === novoPost.id) ||
+                           posts.some(p => p.id === novoPost.id);
+          return jaExiste ? prev : [novoPost, ...prev];
+        });
+      }
+      if (payload.tipo === 'NOVO_COMENTARIO') {
+        const postAtualizado = payload.dados as Post;
+        // Atualiza contador de comentários em tempo real
+        setPosts(prev =>
+          prev.map(p => p.id === postAtualizado.id ? postAtualizado : p)
+        );
+      }
+    }, [posts])
+  );
+
+  // ✅ Ao clicar no banner, insere os posts novos no topo e limpa o banner
+  function aplicarNovosPosts() {
+    setPosts(prev => {
+      const idsExistentes = new Set(prev.map(p => p.id));
+      const novos = novosPosts.filter(p => !idsExistentes.has(p.id));
+      return [...novos, ...prev];
+    });
+    setNovosPosts([]);
+  }
 
   async function handleCurtir(postId: number) {
     try {
@@ -389,6 +424,9 @@ export default function FeedScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* ✅ Banner de novos posts em tempo real */}
+      <BannerNovosPosts count={novosPosts.length} onPress={aplicarNovosPosts} />
+
       {posts.length === 0 ? (
         <View style={styles.centeredEmpty}>
           <IconEmpty size={64} color={colors.border} />
@@ -431,7 +469,7 @@ export default function FeedScreen() {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────
+// ─── Estilos ─────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -458,6 +496,15 @@ const styles = StyleSheet.create({
   tabInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.white },
+
+  // ✅ banner de novos posts em tempo real
+  bannerNovos: {
+    backgroundColor: colors.primary,
+    marginHorizontal: 16, marginTop: 8,
+    paddingVertical: 10, borderRadius: 12,
+    alignItems: 'center',
+  },
+  bannerNovosText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
   card: {
     backgroundColor: colors.white, borderRadius: 16, padding: 16,

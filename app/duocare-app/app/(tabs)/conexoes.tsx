@@ -1,5 +1,5 @@
 // ============================================================
-//  app/(tabs)/conexoes.tsx — com ícones SVG
+//  app/(tabs)/conexoes.tsx
 // ============================================================
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -13,9 +13,9 @@ import { conexaoService, Conexao, UserBusca } from '../../src/services/conexaoSe
 import { colors } from '../../src/theme/colors';
 import { IconSearch } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Circle, Path, Line, Polyline, Polygon } from 'react-native-svg';
+import { useSubscription } from '../../src/contexts/SocketContext'; // ✅ novo
 
-// ─── Ícones locais ────────────────────────────────────────────
-
+// ─── (ícones locais inalterados) ─────────────────────────────
 function IconConectado({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
@@ -24,7 +24,6 @@ function IconConectado({ size = 14 }) {
     </Svg>
   );
 }
-
 function IconPendente({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
@@ -34,7 +33,6 @@ function IconPendente({ size = 14 }) {
     </Svg>
   );
 }
-
 function IconEstrela({ size = 13, color = '#F59E0B' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -42,7 +40,6 @@ function IconEstrela({ size = 13, color = '#F59E0B' }) {
     </Svg>
   );
 }
-
 function IconClose({ size = 14, color = '#EF4444' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -51,7 +48,6 @@ function IconClose({ size = 14, color = '#EF4444' }) {
     </Svg>
   );
 }
-
 function IconUserPlus({ size = 14, color = '#fff' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -62,7 +58,6 @@ function IconUserPlus({ size = 14, color = '#fff' }) {
     </Svg>
   );
 }
-
 function IconCheck({ size = 14, color = '#fff' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -81,20 +76,19 @@ function Avatar({ nome, size = 44 }: { nome: string; size?: number }) {
   );
 }
 
-// ─── Item de conexão animado ─────────────────────────────────
+// ─── (ItemConexao, ItemPendente, ItemBusca, EmptyConexoes — inalterados) ──
+
 function ItemConexao({ item, index, onRemover }: {
   item: Conexao; index: number; onRemover: (id: number) => void;
 }) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim,  { toValue: 1, duration: 350, delay: index * 80, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 350, delay: index * 80, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
-
   return (
     <Animated.View style={[styles.itemCard, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
       <Avatar nome={item.nome} size={48} />
@@ -107,12 +101,10 @@ function ItemConexao({ item, index, onRemover }: {
       </View>
       <TouchableOpacity
         style={styles.btnRemover}
-        onPress={() =>
-          Alert.alert('Remover conexão', `Remover ${item.nome}?`, [
-            { text: 'Cancelar', style: 'cancel' },
-            { text: 'Remover', style: 'destructive', onPress: () => onRemover(item.id) },
-          ])
-        }
+        onPress={() => Alert.alert('Remover conexão', `Remover ${item.nome}?`, [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Remover', style: 'destructive', onPress: () => onRemover(item.id) },
+        ])}
       >
         <IconClose size={13} color={colors.error} />
       </TouchableOpacity>
@@ -120,7 +112,6 @@ function ItemConexao({ item, index, onRemover }: {
   );
 }
 
-// ─── Item de solicitação pendente ────────────────────────────
 function ItemPendente({ item, index, onAceitar, onRecusar }: {
   item: Conexao; index: number;
   onAceitar: (id: number) => void;
@@ -130,17 +121,14 @@ function ItemPendente({ item, index, onAceitar, onRecusar }: {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const [loadingAceitar, setLoadingAceitar] = useState(false);
   const [loadingRecusar, setLoadingRecusar] = useState(false);
-
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim,  { toValue: 1, duration: 350, delay: index * 80, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 350, delay: index * 80, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
-
   async function handleAceitar() { setLoadingAceitar(true); await onAceitar(item.id); setLoadingAceitar(false); }
   async function handleRecusar() { setLoadingRecusar(true); await onRecusar(item.id); setLoadingRecusar(false); }
-
   return (
     <Animated.View style={[styles.itemCard, styles.itemCardPendente, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
       <Avatar nome={item.nome} size={48} />
@@ -169,12 +157,10 @@ function ItemPendente({ item, index, onAceitar, onRecusar }: {
   );
 }
 
-// ─── Item de resultado de busca ──────────────────────────────
 function ItemBusca({ item, onConectar, jaSolicitado }: {
   item: UserBusca; onConectar: (id: number) => void; jaSolicitado: boolean;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
-
   function handlePress() {
     if (jaSolicitado) return;
     Animated.sequence([
@@ -182,7 +168,6 @@ function ItemBusca({ item, onConectar, jaSolicitado }: {
       Animated.timing(scaleAnim, { toValue: 1,    duration: 80, useNativeDriver: true }),
     ]).start(() => onConectar(item.id));
   }
-
   return (
     <Animated.View style={[styles.itemBusca, { transform: [{ scale: scaleAnim }] }]}>
       <Avatar nome={item.nome} size={44} />
@@ -211,11 +196,9 @@ function ItemBusca({ item, onConectar, jaSolicitado }: {
   );
 }
 
-// ─── Empty state com mascote ─────────────────────────────────
 function EmptyConexoes({ mensagem }: { mensagem: string }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     Animated.loop(
@@ -225,7 +208,6 @@ function EmptyConexoes({ mensagem }: { mensagem: string }) {
       ])
     ).start();
   }, []);
-
   return (
     <Animated.View style={[styles.emptyState, { opacity: fadeAnim }]}>
       <Animated.Image
@@ -253,12 +235,20 @@ export default function ConexoesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [solicitados, setSolicitados] = useState<Set<number>>(new Set());
 
+  // ✅ contador de novas solicitações recebidas via WebSocket (para o badge)
+  const [novasSolicitacoes, setNovasSolicitacoes] = useState(0);
+
   const headerFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     carregar();
   }, []);
+
+  // ✅ Zera o badge quando o usuário abre a aba de pendentes
+  useEffect(() => {
+    if (aba === 'pendentes') setNovasSolicitacoes(0);
+  }, [aba]);
 
   async function carregar() {
     try {
@@ -277,6 +267,30 @@ export default function ConexoesScreen() {
   }
 
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, []);
+
+  // ✅ WebSocket: escuta solicitações e confirmações em tempo real
+  useSubscription(
+    `/topic/conexoes/${user?.userId}`,
+    useCallback((payload) => {
+      if (payload.tipo === 'NOVA_SOLICITACAO') {
+        const novaSolicitacao = payload.dados as Conexao;
+        // Adiciona à lista de pendentes sem precisar recarregar
+        setPendentes(prev => {
+          const jaExiste = prev.some(p => p.id === novaSolicitacao.id);
+          return jaExiste ? prev : [novaSolicitacao, ...prev];
+        });
+        // Incrementa badge se não estiver na aba de pendentes
+        setNovasSolicitacoes(prev => prev + 1);
+        Alert.alert('Nova solicitação! 🤝', payload.mensagem);
+      }
+
+      if (payload.tipo === 'CONEXAO_ACEITA') {
+        // Recarrega a lista de conexões aceitas
+        carregar();
+        Alert.alert('Conexão aceita! 🎉', payload.mensagem);
+      }
+    }, [])
+  );
 
   async function handleBuscar() {
     if (!termoBusca.trim()) return;
@@ -314,40 +328,42 @@ export default function ConexoesScreen() {
     catch { Alert.alert('Erro', 'Não foi possível recusar a solicitação.'); }
   }
 
-async function handleRemover(conexaoId: number) {
-  try {
-    // Pega o userId da pessoa antes de remover
-    const conexao = conexoes.find(c => c.id === conexaoId);
-
-    await conexaoService.remover(conexaoId);
-
-    setConexoes(prev => prev.filter(c => c.id !== conexaoId));
-
-    // Limpa do Set para permitir reconectar
-    if (conexao) {
-      setSolicitados(prev => {
-        const next = new Set(prev);
-        next.delete(conexao.userId); // ou o campo que representa o userId da pessoa
-        return next;
-      });
+  async function handleRemover(conexaoId: number) {
+    try {
+      const conexao = conexoes.find(c => c.id === conexaoId);
+      await conexaoService.remover(conexaoId);
+      setConexoes(prev => prev.filter(c => c.id !== conexaoId));
+      if (conexao) {
+        setSolicitados(prev => {
+          const next = new Set(prev);
+          next.delete(conexao.userId);
+          return next;
+        });
+      }
+    } catch {
+      Alert.alert('Erro', 'Não foi possível remover a conexão.');
     }
-  } catch {
-    Alert.alert('Erro', 'Não foi possível remover a conexão.');
   }
-}
 
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
 
+  // ✅ total de pendentes inclui as recebidas em tempo real
+  const totalPendentes = pendentes.length;
+  const badgeCount = totalPendentes + novasSolicitacoes;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Animated.View style={[styles.header, { opacity: headerFade }]}>
         <Text style={styles.headerTitle}>Conexões</Text>
-        {pendentes.length > 0 && (
+        {/* ✅ Badge atualizado em tempo real */}
+        {badgeCount > 0 && (
           <TouchableOpacity style={styles.badgePendente} onPress={() => setAba('pendentes')}>
             <IconPendente size={13} />
-            <Text style={styles.badgePendenteText}>{pendentes.length} pendente{pendentes.length > 1 ? 's' : ''}</Text>
+            <Text style={styles.badgePendenteText}>
+              {badgeCount} pendente{badgeCount > 1 ? 's' : ''}
+            </Text>
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -355,7 +371,8 @@ async function handleRemover(conexaoId: number) {
       <View style={styles.tabs}>
         {[
           { key: 'conexoes',  label: `Minhas (${conexoes.length})` },
-          { key: 'pendentes', label: `Pendentes (${pendentes.length})` },
+          // ✅ badge na tab de pendentes
+          { key: 'pendentes', label: `Pendentes (${totalPendentes})${novasSolicitacoes > 0 ? ' 🔔' : ''}` },
           { key: 'buscar',    label: 'Buscar' },
         ].map(({ key, label }) => (
           <TouchableOpacity
@@ -394,7 +411,6 @@ async function handleRemover(conexaoId: number) {
               }
             </TouchableOpacity>
           </View>
-
           <FlatList
             data={resultadoBusca}
             keyExtractor={item => String(item.id)}
@@ -429,11 +445,10 @@ async function handleRemover(conexaoId: number) {
   );
 }
 
-// ─── Estilos ────────────────────────────────────────────────
+// ─── Estilos ─────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingVertical: 14,
@@ -446,7 +461,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5, borderRadius: 20,
   },
   badgePendenteText: { fontSize: 12, fontWeight: '700', color: colors.warning },
-
   tabs: {
     flexDirection: 'row', backgroundColor: colors.white,
     paddingHorizontal: 12, paddingBottom: 12, gap: 6,
@@ -455,9 +469,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.white },
-
   listContent: { padding: 16, gap: 10, paddingBottom: 40 },
-
   itemCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.white, borderRadius: 16, padding: 14,
@@ -469,12 +481,10 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   itemStatus: { fontSize: 12, color: colors.textSecondary },
   itemBio: { fontSize: 12, color: colors.textSecondary },
-
   btnRemover: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: colors.errorLight, alignItems: 'center', justifyContent: 'center',
   },
-
   pendenteBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   btnAceitar: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -488,7 +498,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 7, minWidth: 80,
   },
   btnRecusarText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
-
   buscaContainer: { flex: 1 },
   buscaInputRow: {
     flexDirection: 'row', gap: 10,
@@ -507,7 +516,6 @@ const styles = StyleSheet.create({
   },
   btnBuscarDisabled: { backgroundColor: colors.border },
   btnBuscarText: { color: colors.white, fontWeight: '700', fontSize: 14 },
-
   itemBusca: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.white, borderRadius: 16, padding: 14,
@@ -521,10 +529,8 @@ const styles = StyleSheet.create({
   btnConectarDisabled: { backgroundColor: colors.border },
   btnConectarText: { color: colors.white, fontSize: 13, fontWeight: '700' },
   btnConectarTextDisabled: { color: colors.textSecondary },
-
   avatar: { backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: '700', color: colors.primaryDark },
-
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 10 },
   emptyMascote: { width: 130, height: 130 },
   emptySombra: { width: 65, height: 10, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.08)', marginTop: 2 },

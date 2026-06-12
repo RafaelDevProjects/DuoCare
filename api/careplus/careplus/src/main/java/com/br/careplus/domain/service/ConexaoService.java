@@ -1,5 +1,7 @@
 package com.br.careplus.domain.service;
 
+import com.br.careplus.api.dto.conexao.ConexaoResponse;
+import com.br.careplus.api.dto.notification.NotificationDTO;
 import com.br.careplus.domain.model.Conexao;
 import com.br.careplus.domain.model.User;
 import com.br.careplus.domain.repository.ConexaoRepository;
@@ -14,8 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ConexaoService {
 
-    private final ConexaoRepository conexaoRepository;
-    private final UserRepository userRepository;
+    private final ConexaoRepository  conexaoRepository;
+    private final UserRepository     userRepository;
+    private final NotificationService notificationService; // ✅ novo
 
     public List<Conexao> listarConexoes(Long userId) {
         return conexaoRepository.findConexoesAceitas(userId);
@@ -27,9 +30,8 @@ public class ConexaoService {
 
     @Transactional
     public Conexao solicitarConexao(Long solicitanteId, Long receptorId) {
-        if (solicitanteId.equals(receptorId)) {
+        if (solicitanteId.equals(receptorId))
             throw new IllegalArgumentException("Você não pode se conectar consigo mesmo.");
-        }
 
         conexaoRepository.findEntreUsuarios(solicitanteId, receptorId).ifPresent(c -> {
             throw new IllegalStateException("Já existe uma conexão ou solicitação entre vocês.");
@@ -40,28 +42,45 @@ public class ConexaoService {
         User receptor = userRepository.findById(receptorId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário alvo não encontrado."));
 
-        return conexaoRepository.save(Conexao.builder()
-                .solicitante(solicitante)
-                .receptor(receptor)
-                .build());
+        Conexao conexao = conexaoRepository.save(
+                Conexao.builder().solicitante(solicitante).receptor(receptor).build()
+        );
+
+        // ✅ WebSocket: avisa o receptor em tempo real sobre a nova solicitação
+        ConexaoResponse responseParaReceptor = ConexaoResponse.from(conexao, receptorId);
+        notificationService.notificarConexao(
+                receptorId,
+                NotificationDTO.novaSolicitacao(responseParaReceptor, solicitante.getNome())
+        );
+
+        return conexao;
     }
 
     @Transactional
     public Conexao responderSolicitacao(Long conexaoId, Long userId, boolean aceitar) {
-
         Conexao conexao = conexaoRepository.findByIdComUsuarios(conexaoId)
                 .orElseThrow(() -> new IllegalArgumentException("Solicitação não encontrada."));
 
-        if (!conexao.getReceptor().getId().equals(userId)) {
+        if (!conexao.getReceptor().getId().equals(userId))
             throw new SecurityException("Acesso negado.");
-        }
 
-        if (!"PENDENTE".equals(conexao.getStatus())) {
+        if (!"PENDENTE".equals(conexao.getStatus()))
             throw new IllegalStateException("Solicitação já foi respondida.");
-        }
 
         conexao.setStatus(aceitar ? "ACEITO" : "RECUSADO");
-        return conexaoRepository.save(conexao);
+        Conexao salva = conexaoRepository.save(conexao);
+
+        // ✅ WebSocket: se aceito, avisa o solicitante em tempo real
+        if (aceitar) {
+            Long solicitanteId = conexao.getSolicitante().getId();
+            ConexaoResponse responseParaSolicitante = ConexaoResponse.from(salva, solicitanteId);
+            notificationService.notificarConexao(
+                    solicitanteId,
+                    NotificationDTO.conexaoAceita(responseParaSolicitante, conexao.getReceptor().getNome())
+            );
+        }
+
+        return salva;
     }
 
     @Transactional

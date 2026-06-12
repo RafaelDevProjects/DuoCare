@@ -1,6 +1,7 @@
 package com.br.careplus.domain.service;
 
-import com.br.careplus.api.dto.desafio.*;
+import com.br.careplus.api.dto.desafio.UserDesafioResponse;
+import com.br.careplus.api.dto.notification.NotificationDTO;
 import com.br.careplus.domain.model.*;
 import com.br.careplus.domain.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +15,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DesafioService {
 
-    private final DesafioRepository desafioRepository;
-    private final UserDesafioRepository userDesafioRepository;
-    private final UserRepository userRepository;
-    private final PontosService pontosService;
+    private final DesafioRepository      desafioRepository;
+    private final UserDesafioRepository  userDesafioRepository;
+    private final UserRepository         userRepository;
+    private final PontosService          pontosService;
+    private final NotificationService    notificationService; // ✅ novo
 
     public List<Desafio> listarDisponiveis() {
         return desafioRepository.findByAtivoTrue();
@@ -38,10 +40,9 @@ public class DesafioService {
                 .existsByUserIdAndDesafioIdAndStatus(userId, desafioId, "EM_ANDAMENTO");
         if (jaAtivo) throw new IllegalStateException("Desafio já iniciado.");
 
-        return userDesafioRepository.save(UserDesafio.builder()
-                .user(user)
-                .desafio(desafio)
-                .build());
+        return userDesafioRepository.save(
+                UserDesafio.builder().user(user).desafio(desafio).build()
+        );
     }
 
     @Transactional
@@ -49,9 +50,8 @@ public class DesafioService {
         UserDesafio ud = userDesafioRepository.findById(userDesafioId)
                 .orElseThrow(() -> new IllegalArgumentException("Registro não encontrado."));
 
-        if (!ud.getUser().getId().equals(userId)) {
+        if (!ud.getUser().getId().equals(userId))
             throw new SecurityException("Acesso negado.");
-        }
 
         ud.setProgressoAtual(novoProgresso);
 
@@ -64,6 +64,14 @@ public class DesafioService {
             pontosService.adicionarPontos(userId, pontos,
                     "Desafio concluído: " + ud.getDesafio().getTitulo(),
                     "DESAFIO", ud.getDesafio().getId());
+
+            // ✅ WebSocket: notifica o usuário sobre a conclusão em tempo real
+            UserDesafio salvo = userDesafioRepository.save(ud);
+            notificationService.notificarDesafio(
+                    userId,
+                    NotificationDTO.desafioConcluido(UserDesafioResponse.from(salvo), pontos)
+            );
+            return salvo;
         }
 
         return userDesafioRepository.save(ud);
