@@ -3,17 +3,20 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert, Modal,
-  TextInput, Animated, Easing,
+  TextInput, Animated, Easing, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { desafioService, Desafio, UserDesafio } from '../../src/services/desafioService';
+import { desafioService, UserDesafio, Desafio } from '../../src/services/desafioService';
 import { colors } from '../../src/theme/colors';
 import {
   IconCorrida, IconHidratacao, IconMeditacao, IconNutricao,
 } from '../../src/components/icons/CarePlusIcons';
-import Svg, { Path, Polygon } from 'react-native-svg';
+import Svg, { Path, Polygon, Circle, Line } from 'react-native-svg';
 import { useSubscription } from '../../src/contexts/SocketContext';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
 
 function IconEstrela({ size = 16, color = colors.accent }) {
   return (
@@ -23,11 +26,15 @@ function IconEstrela({ size = 16, color = colors.accent }) {
   );
 }
 
-const NIVEL_CONFIG = {
-  FACIL:   { label: 'Fácil',   color: colors.success, bg: colors.successMuted },
-  MEDIO:   { label: 'Médio',   color: colors.warning, bg: colors.warningMuted },
-  DIFICIL: { label: 'Difícil', color: colors.error,   bg: colors.errorMuted },
-};
+function IconInfo({ size = 16, color = colors.textSecondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+      <Circle cx="12" cy="12" r="10" />
+      <Line x1="12" y1="16" x2="12" y2="12" />
+      <Line x1="12" y1="8" x2="12.01" y2="8" stroke={color} strokeWidth="2" />
+    </Svg>
+  );
+}
 
 const CATEGORIA_ICON: Record<string, React.ComponentType<any>> = {
   CORRIDA:    IconCorrida,
@@ -35,6 +42,24 @@ const CATEGORIA_ICON: Record<string, React.ComponentType<any>> = {
   MEDITACAO:  IconMeditacao,
   NUTRICAO:   IconNutricao,
 };
+
+const NIVEL_CONFIG = {
+  FACIL:   { label: 'Fácil',   color: colors.success, bg: colors.successMuted, gradiente: ['#34D399', '#10B981'] },
+  MEDIO:   { label: 'Médio',   color: colors.warning, bg: colors.warningMuted, gradiente: ['#FB923C', '#F59E0B'] },
+  DIFICIL: { label: 'Difícil', color: colors.error,   bg: colors.errorMuted,   gradiente: ['#F87171', '#EF4444'] },
+};
+
+function tempoRestante(prazoISO: string) {
+  if (!prazoISO) return 'Sem prazo';
+  const prazo = new Date(prazoISO).getTime();
+  const agora = Date.now();
+  const diff = prazo - agora;
+  if (diff <= 0) return 'Expirado';
+  const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const horas = Math.floor((diff % (86400000)) / (1000 * 60 * 60));
+  if (dias > 0) return `${dias}d ${horas}h`;
+  return `${Math.floor(diff / (1000 * 60 * 60))}h`;
+}
 
 function EmptyDesafios({ onExplorar }: { onExplorar: () => void }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
@@ -78,6 +103,7 @@ function CardAtivo({ ud, onAtualizar, index }: {
   const [modal, setModal] = useState(false);
   const [valor, setValor] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -100,7 +126,7 @@ function CardAtivo({ ud, onAtualizar, index }: {
       setModal(false);
       setValor('');
       if (updated.status === 'CONCLUIDO') {
-        Alert.alert('Desafio concluído!', `Você ganhou ${updated.pontosGanhos} pontos!`);
+        Alert.alert('🎉 Desafio concluído!', `Você ganhou ${updated.pontosGanhos} pontos!`);
       }
       onAtualizar();
     } catch {
@@ -111,26 +137,70 @@ function CardAtivo({ ud, onAtualizar, index }: {
   }
 
   const barColor = ud.percentual >= 100 ? colors.success : ud.percentual >= 50 ? colors.primary : colors.warning;
+  const nivelInfo = NIVEL_CONFIG[ud.nivel as keyof typeof NIVEL_CONFIG] || NIVEL_CONFIG.FACIL;
+  const prazo = tempoRestante(ud.prazoFinal);
+  const CategoriaIcon = CATEGORIA_ICON[ud.categoriaNome] || IconCorrida;
 
   return (
     <>
       <Animated.View style={[styles.cardAtivo, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-        <View style={styles.cardAtivoHeader}>
-          <View style={styles.cardAtivoTitleRow}>
-            <Text style={styles.cardAtivoTitulo} numberOfLines={1}>{ud.tituloDesafio}</Text>
+        <LinearGradient
+          colors={[barColor + '22', colors.surface]}
+          style={styles.cardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.cardAtivoHeader}>
+            <View style={styles.cardAtivoTitleRow}>
+              <View style={styles.cardIconWrapper}>
+                <CategoriaIcon size={28} color={nivelInfo.color} strokeWidth={1.8} />
+              </View>
+              <Text style={styles.cardAtivoTitulo} numberOfLines={2}>{ud.tituloDesafio}</Text>
+              <View style={[styles.nivelBadge, { backgroundColor: nivelInfo.bg }]}>
+                <Text style={[styles.nivelText, { color: nivelInfo.color }]}>{nivelInfo.label}</Text>
+              </View>
+            </View>
+            <Text style={styles.cardAtivoSub}>{ud.progressoAtual} / {ud.metaValor} {ud.metaUnidade}</Text>
+          </View>
+
+          <View style={styles.progressWrapper}>
+            <View style={styles.progressBar}>
+              <Animated.View style={[
+                styles.progressFill,
+                { width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: barColor },
+              ]} />
+            </View>
             <Text style={[styles.cardAtivoPct, { color: barColor }]}>{ud.percentual.toFixed(0)}%</Text>
           </View>
-          <Text style={styles.cardAtivoSub}>{ud.progressoAtual} / {ud.metaValor} {ud.metaUnidade}</Text>
-        </View>
-        <View style={styles.progressBar}>
-          <Animated.View style={[
-            styles.progressFill,
-            { width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: barColor },
-          ]} />
-        </View>
-        <TouchableOpacity style={styles.btnAtualizar} onPress={() => setModal(true)}>
-          <Text style={styles.btnAtualizarText}>Atualizar progresso</Text>
-        </TouchableOpacity>
+
+          <View style={styles.cardAtivoMeta}>
+            <View style={styles.metaItem}>
+              <IconEstrela size={14} color={colors.accent} />
+              <Text style={styles.metaText}>Recompensa: {ud.pontosRecompensa} pts</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Svg width="12" height="12" viewBox="0 0 12 12">
+                <Circle cx="6" cy="6" r="5" fill={prazo === 'Expirado' ? colors.error : colors.warning} />
+              </Svg>
+              <Text style={[styles.metaText, { color: prazo === 'Expirado' ? colors.error : colors.warning }]}>{prazo}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowDetails(!showDetails)}>
+              <IconInfo size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          {showDetails && (
+            <View style={styles.detailsBox}>
+              <Text style={styles.detailsText}>{ud.descricao || 'Sem descrição'}</Text>
+              {ud.dicas && <Text style={styles.dicasText}>💡 Dica: {ud.dicas}</Text>}
+              <Text style={styles.rewardText}>🏆 Pontuação total: {ud.pontosRecompensa} pts</Text>
+            </View>
+          )}
+
+          <TouchableOpacity style={[styles.btnAtualizar, { borderColor: barColor }]} onPress={() => setModal(true)}>
+            <Text style={styles.btnAtualizarText}>Atualizar progresso</Text>
+          </TouchableOpacity>
+        </LinearGradient>
       </Animated.View>
 
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
@@ -172,6 +242,7 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [showDetails, setShowDetails] = useState(false);
 
   const nivel = NIVEL_CONFIG[desafio.nivel] ?? NIVEL_CONFIG.FACIL;
   const CategoriaIcon = CATEGORIA_ICON[desafio.categoriaNome] ?? IconCorrida;
@@ -193,39 +264,54 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
 
   return (
     <Animated.View style={[styles.cardDisp, { opacity: fadeAnim, transform: [{ translateY: slideAnim }, { scale: scaleAnim }] }]}>
-      <View style={styles.cardDispTop}>
-        <View style={styles.cardDispIconWrapper}>
-          <CategoriaIcon size={28} color={colors.primary} strokeWidth={1.8} />
+      <LinearGradient
+        colors={[colors.surface, colors.surfaceHigh]}
+        style={styles.cardDispGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={styles.cardDispTop}>
+          <View style={[styles.cardDispIconWrapper, { backgroundColor: nivel.bg }]}>
+            <CategoriaIcon size={32} color={nivel.color} strokeWidth={1.8} />
+          </View>
+          <View style={styles.cardDispInfo}>
+            <Text style={styles.cardDispTitulo} numberOfLines={2}>{desafio.titulo}</Text>
+            <Text style={styles.cardDispMeta}>Meta: {desafio.metaValor} {desafio.metaUnidade}</Text>
+          </View>
+          <View style={[styles.nivelBadge, { backgroundColor: nivel.bg }]}>
+            <Text style={[styles.nivelText, { color: nivel.color }]}>{nivel.label}</Text>
+          </View>
         </View>
-        <View style={styles.cardDispInfo}>
-          <Text style={styles.cardDispTitulo} numberOfLines={2}>{desafio.titulo}</Text>
-          <Text style={styles.cardDispMeta}>Meta: {desafio.metaValor} {desafio.metaUnidade}</Text>
-        </View>
-        <View style={[styles.nivelBadge, { backgroundColor: nivel.bg }]}>
-          <Text style={[styles.nivelText, { color: nivel.color }]}>{nivel.label}</Text>
-        </View>
-      </View>
 
-      {desafio.descricao ? (
-        <Text style={styles.cardDispDesc} numberOfLines={2}>{desafio.descricao}</Text>
-      ) : null}
-
-      <View style={styles.cardDispFooter}>
-        <View style={styles.pontosContainer}>
-          <IconEstrela size={16} color={colors.accent} />
-          <Text style={styles.pontosText}>{desafio.pontosRecompensa} pts</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.btnIniciar, jaIniciado && styles.btnIniciarDisabled]}
-          onPress={handlePress}
-          disabled={jaIniciado}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.btnIniciarText, jaIniciado && styles.btnIniciarTextDisabled]}>
-            {jaIniciado ? '✓ Iniciado' : 'Iniciar'}
-          </Text>
+        <TouchableOpacity style={styles.detailsButton} onPress={() => setShowDetails(!showDetails)}>
+          <Text style={styles.detailsButtonText}>{showDetails ? '▼ Menos detalhes' : '▶ Mais detalhes'}</Text>
         </TouchableOpacity>
-      </View>
+
+        {showDetails && (
+          <View style={styles.detailsBox}>
+            <Text style={styles.detailsText}>{desafio.descricao || 'Sem descrição'}</Text>
+            {desafio.dicas && <Text style={styles.dicasText}>💡 Dica: {desafio.dicas}</Text>}
+            <Text style={styles.rewardText}>🏆 Recompensa: {desafio.pontosRecompensa} pts</Text>
+          </View>
+        )}
+
+        <View style={styles.cardDispFooter}>
+          <View style={styles.pontosContainer}>
+            <IconEstrela size={18} color={colors.accent} />
+            <Text style={styles.pontosText}>{desafio.pontosRecompensa} pts</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.btnIniciar, jaIniciado && styles.btnIniciarDisabled, { backgroundColor: nivel.color }]}
+            onPress={handlePress}
+            disabled={jaIniciado}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.btnIniciarText, jaIniciado && styles.btnIniciarTextDisabled]}>
+              {jaIniciado ? '✓ Iniciado' : 'Iniciar'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
     </Animated.View>
   );
 }
@@ -249,7 +335,7 @@ export default function DesafiosScreen() {
         const udConcluido = payload.dados as UserDesafio;
         setAtivos(prev => prev.map(ud => ud.id === udConcluido.id ? udConcluido : ud));
         refreshUser();
-        Alert.alert('🏆 Desafio concluído!', payload.mensagem);
+        Alert.alert('🎉 Parabéns!', payload.mensagem);
       }
     }, [])
   );
@@ -304,7 +390,7 @@ export default function DesafiosScreen() {
           <Text style={styles.headerSub}>{ativos.length} desafio{ativos.length !== 1 ? 's' : ''} em andamento</Text>
         </View>
         <View style={styles.pontosChip}>
-          <IconEstrela size={14} color={colors.accent} />
+          <IconEstrela size={16} color={colors.accent} />
           <Text style={styles.pontosChipText}>{user?.pontos ?? 0}</Text>
         </View>
       </Animated.View>
@@ -317,6 +403,7 @@ export default function DesafiosScreen() {
           <Text style={[styles.tabText, aba === 'ativos' && styles.tabTextActive]}>
             Meus desafios ({ativos.length})
           </Text>
+          {aba === 'ativos' && <View style={styles.tabIndicator} />}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, aba === 'disponiveis' && styles.tabActive]}
@@ -325,6 +412,7 @@ export default function DesafiosScreen() {
           <Text style={[styles.tabText, aba === 'disponiveis' && styles.tabTextActive]}>
             Disponíveis ({disponiveis.length})
           </Text>
+          {aba === 'disponiveis' && <View style={styles.tabIndicator} />}
         </TouchableOpacity>
       </Animated.View>
 
@@ -370,87 +458,83 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 30, paddingBottom: 30,
-    backgroundColor: colors.background, borderBottomWidth: 0, borderBottomColor: colors.border,
+    paddingHorizontal: 20, paddingTop: 30, paddingBottom: 20,
+    backgroundColor: colors.background,
   },
-  headerGreeting: { fontSize: 20, fontWeight: '700', color: colors.text },
+  headerGreeting: { fontSize: 22, fontWeight: '700', color: colors.text },
   headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   pontosChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: colors.accentMuted, paddingHorizontal: 14,
-    paddingVertical: 6, borderRadius: 20,
+    paddingVertical: 8, borderRadius: 30,
+    borderWidth: 1, borderColor: colors.accent + '44',
   },
-  pontosChipText: { fontSize: 14, fontWeight: '700', color: colors.accent },
+  pontosChipText: { fontSize: 16, fontWeight: '700', color: colors.accent },
   tabs: {
     flexDirection: 'row', backgroundColor: colors.background,
-    paddingHorizontal: 30, paddingBottom: 30, gap: 8,
+    paddingHorizontal: 20, paddingBottom: 8, gap: 16,
   },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.border },
-  tabActive: { backgroundColor: colors.primary },
-  tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  tabTextActive: { color: colors.white },
+  tab: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 30, position: 'relative' },
+  tabActive: { backgroundColor: colors.surface },
+  tabText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  tabTextActive: { color: colors.primary },
+  tabIndicator: { position: 'absolute', bottom: 0, left: '20%', width: '60%', height: 2, backgroundColor: colors.primary, borderRadius: 2 },
   scroll: { flex: 1 },
-  scrollContent: { padding: 16, gap: 12, paddingBottom: 32 },
-  cardAtivo: {
-    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
-    gap: 12,
-  },
-  cardAtivoHeader: { gap: 4 },
-  cardAtivoTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scrollContent: { padding: 16, gap: 16, paddingBottom: 40 },
+  cardAtivo: { borderRadius: 20, overflow: 'hidden', marginBottom: 4 },
+  cardGradient: { padding: 16, borderRadius: 20, gap: 12 },
+  cardAtivoHeader: { gap: 6 },
+  cardAtivoTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardIconWrapper: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceHigh, alignItems: 'center', justifyContent: 'center' },
   cardAtivoTitulo: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
-  cardAtivoPct: { fontSize: 16, fontWeight: '700' },
-  cardAtivoSub: { fontSize: 13, color: colors.textSecondary },
-  progressBar: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4 },
-  btnAtualizar: {
-    backgroundColor: colors.primaryMuted, borderRadius: 10,
-    paddingVertical: 10, alignItems: 'center',
-  },
-  btnAtualizarText: { fontSize: 14, fontWeight: '700', color: colors.primary },
-  cardDisp: {
-    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
-    gap: 10,
-  },
-  cardDispTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  cardDispIconWrapper: {
-    width: 52, height: 52, borderRadius: 14,
-    backgroundColor: colors.primaryMuted,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
+  cardAtivoSub: { fontSize: 13, color: colors.textSecondary, marginLeft: 54 },
+  progressWrapper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  progressBar: { flex: 1, height: 10, backgroundColor: colors.border, borderRadius: 5, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 5 },
+  cardAtivoPct: { fontSize: 16, fontWeight: '700', width: 45, textAlign: 'right' },
+  cardAtivoMeta: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 4 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { fontSize: 12, color: colors.textSecondary },
+  detailsBox: { backgroundColor: colors.surfaceHigh, padding: 12, borderRadius: 12, gap: 6 },
+  detailsText: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  dicasText: { fontSize: 12, color: colors.primary, fontStyle: 'italic' },
+  rewardText: { fontSize: 12, color: colors.accent, fontWeight: '600' },
+  btnAtualizar: { borderWidth: 1.5, borderRadius: 40, paddingVertical: 10, alignItems: 'center', backgroundColor: colors.primaryMuted + '80' },
+  btnAtualizarText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  cardDisp: { borderRadius: 20, overflow: 'hidden', marginBottom: 4 },
+  cardDispGradient: { padding: 16, borderRadius: 20, gap: 12 },
+  cardDispTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  cardDispIconWrapper: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   cardDispInfo: { flex: 1 },
-  cardDispTitulo: { fontSize: 15, fontWeight: '700', color: colors.text },
+  cardDispTitulo: { fontSize: 16, fontWeight: '700', color: colors.text },
   cardDispMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  nivelBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexShrink: 0 },
-  nivelText: { fontSize: 11, fontWeight: '700' },
-  cardDispDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  cardDispFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pontosContainer: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  pontosText: { fontSize: 14, fontWeight: '700', color: colors.text },
-  btnIniciar: { backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 8, borderRadius: 10 },
-  btnIniciarDisabled: { backgroundColor: colors.border },
+  detailsButton: { alignSelf: 'flex-start' },
+  detailsButtonText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+  cardDispFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  pontosContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  pontosText: { fontSize: 15, fontWeight: '700', color: colors.accent },
+  btnIniciar: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 40, alignItems: 'center' },
+  btnIniciarDisabled: { opacity: 0.5 },
   btnIniciarText: { fontSize: 14, fontWeight: '700', color: colors.white },
   btnIniciarTextDisabled: { color: colors.textSecondary },
+  nivelBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, flexShrink: 0 },
+  nivelText: { fontSize: 11, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 12 },
   emptyMascote: { width: 150, height: 150 },
   emptySombra: { width: 75, height: 10, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 4 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 },
-  emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
+  emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 30, marginTop: 8 },
   emptyBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
-  modalSub: { fontSize: 14, color: colors.textSecondary },
-  modalLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
-  modalInput: {
-    borderWidth: 1.5, borderColor: colors.border, borderRadius: 12,
-    paddingHorizontal: 16, height: 52, fontSize: 18,
-    color: colors.text, backgroundColor: colors.background,
-  },
-  modalActions: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  modalCancel: { flex: 1, borderWidth: 1.5, borderColor: colors.border, borderRadius: 12, height: 50, alignItems: 'center', justifyContent: 'center' },
-  modalCancelText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
-  modalConfirm: { flex: 1, backgroundColor: colors.primary, borderRadius: 12, height: 50, alignItems: 'center', justifyContent: 'center' },
-  modalConfirmText: { fontSize: 15, fontWeight: '700', color: colors.white },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalBox: { backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, gap: 16 },
+  modalTitle: { fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  modalSub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  modalLabel: { fontSize: 14, fontWeight: '600', color: colors.text },
+  modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: 16, paddingHorizontal: 16, height: 54, fontSize: 18, color: colors.text, backgroundColor: colors.background },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  modalCancel: { flex: 1, borderWidth: 1.5, borderColor: colors.border, borderRadius: 30, height: 50, alignItems: 'center', justifyContent: 'center' },
+  modalCancelText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
+  modalConfirm: { flex: 1, backgroundColor: colors.primary, borderRadius: 30, height: 50, alignItems: 'center', justifyContent: 'center' },
+  modalConfirmText: { fontSize: 16, fontWeight: '700', color: colors.white },
 });

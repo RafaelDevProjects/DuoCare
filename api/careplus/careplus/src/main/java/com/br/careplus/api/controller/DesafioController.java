@@ -34,6 +34,15 @@ public class DesafioController {
         );
     }
 
+    @GetMapping("/meus/todos")
+    @Operation(summary = "Listar TODOS os desafios do usuário (ativos e concluídos)")
+    public ResponseEntity<List<UserDesafioResponse>> meusTodosDesafios(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(
+                desafioService.listarTodosDesafiosDoUsuario(user.getId())
+                        .stream().map(UserDesafioResponse::from).toList()
+        );
+    }
+
     @GetMapping("/meus")
     @Operation(summary = "Listar desafios ativos do usuário autenticado")
     public ResponseEntity<List<UserDesafioResponse>> meusDesafios(@AuthenticationPrincipal User user) {

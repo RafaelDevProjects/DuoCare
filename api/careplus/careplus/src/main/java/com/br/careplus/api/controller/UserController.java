@@ -1,16 +1,23 @@
 package com.br.careplus.api.controller;
 
+import com.br.careplus.api.dto.user.UserProfileResponse;
 import com.br.careplus.api.dto.user.UserResponse;
+import com.br.careplus.domain.model.Liga;
 import com.br.careplus.domain.model.User;
 import com.br.careplus.domain.repository.UserRepository;
+import com.br.careplus.domain.service.LigaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -19,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final LigaService ligaService;
 
     @GetMapping("/me")
     @Operation(summary = "Retorna perfil do usuário autenticado")
@@ -46,5 +54,26 @@ public class UserController {
                 salvo.getId(), salvo.getNome(), salvo.getEmail(),
                 salvo.getFotoUrl(), salvo.getBio(), salvo.getPontos(), salvo.getCriadoEm()
         ));
+    }
+
+    @GetMapping("/{userId}")
+    @Operation(summary = "Buscar perfil público de um usuário")
+    public ResponseEntity<UserProfileResponse> getUserProfile(@PathVariable Long userId) {
+        log.debug("Buscando perfil do usuário: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        Liga liga = null;
+        try {
+            liga = ligaService.buscarLigaPorUsuarioId(userId);
+        } catch (Exception e) {
+            log.warn("Erro ao buscar liga para usuário {}: {}", userId, e.getMessage());
+            // Cria uma liga padrão (Bronze) para não quebrar a resposta
+            liga = Liga.builder()
+                    .nome("Bronze")
+                    .corHex("#CD7F32")
+                    .build();
+        }
+        return ResponseEntity.ok(UserProfileResponse.from(user, liga));
     }
 }

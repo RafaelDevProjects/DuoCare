@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +25,8 @@ public class PostService {
     private final ComentarioRepository    comentarioRepository;
     private final UserRepository          userRepository;
     private final DesafioRepository       desafioRepository;
-    private final ConexaoRepository       conexaoRepository;   // ✅ novo
-    private final NotificationService     notificationService; // ✅ novo
+    private final ConexaoRepository       conexaoRepository;
+    private final NotificationService     notificationService;
 
     public Page<PostResponse> listarFeed(Long userId, int pagina, int tamanho) {
         return postRepository
@@ -36,6 +38,18 @@ public class PostService {
         return postRepository
                 .findFeedGlobal(PageRequest.of(pagina, tamanho))
                 .map(p -> toResponse(p, userId));
+    }
+
+    public Page<PostResponse> listarPostsPorUsuario(Long currentUserId, Long targetUserId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("criadoEm").descending());
+        Page<Post> posts = postRepository.findByUserId(targetUserId, pageable);
+        return posts.map(p -> toResponse(p, currentUserId));
+    }
+
+    public Page<PostResponse> listarPostsCurtidosPorUsuario(Long currentUserId, Long targetUserId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("criadoEm").descending());
+        Page<Post> posts = postRepository.findCurtidasByUserId(targetUserId, pageable);
+        return posts.map(p -> toResponse(p, currentUserId));
     }
 
     @Transactional
@@ -57,9 +71,7 @@ public class PostService {
         Post post = postRepository.save(builder.build());
         PostResponse response = toResponse(post, userId);
 
-        // ✅ WebSocket: notifica conexões do autor sobre o novo post
         notificarConexoesNovoPost(userId, response);
-
         return response;
     }
 
@@ -91,7 +103,6 @@ public class PostService {
                 .conteudo(request.conteudo())
                 .build());
 
-        // ✅ WebSocket: notifica o dono do post (se não for o próprio usuário)
         Long donoId = post.getUser().getId();
         if (!donoId.equals(userId)) {
             PostResponse postAtualizado = toResponse(post, donoId);
@@ -122,8 +133,6 @@ public class PostService {
         postRepository.save(post);
     }
 
-    // ─── helpers ─────────────────────────────────────────────
-
     private PostResponse toResponse(Post p, Long userId) {
         long curtidas    = curtidaRepository.countByPostId(p.getId());
         long comentarios = comentarioRepository.countByPostIdAndAtivoTrue(p.getId());
@@ -131,10 +140,6 @@ public class PostService {
         return PostResponse.from(p, curtidas, comentarios, curtidoPorMim);
     }
 
-    /**
-     * Emite NOVO_POST para cada conexão aceita do autor.
-     * Cada usuário conectado recebe o post em tempo real no seu feed.
-     */
     private void notificarConexoesNovoPost(Long autorId, PostResponse postResponse) {
         List<Conexao> conexoes = conexaoRepository.findConexoesAceitas(autorId);
         for (Conexao c : conexoes) {

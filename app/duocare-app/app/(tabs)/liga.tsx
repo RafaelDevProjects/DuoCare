@@ -12,6 +12,7 @@ import {
   IconBronze, IconPrata, IconOuro, IconPlatina, IconDiamante, IconSafira,
 } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 
 function IconMedal({ posicao, size = 32 }: { posicao: number; size?: number }) {
   const medalCores = [colors.gold, colors.silver, colors.bronze];
@@ -125,6 +126,7 @@ function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
 }
 
 function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; meId: number }) {
+  const router = useRouter();
   const slideAnim = useRef(new Animated.Value(60)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const config = LIGA_CONFIG[item.ligaNome];
@@ -139,6 +141,10 @@ function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; 
 
   const isMe = item.userId === meId;
 
+  const navegarParaPerfil = () => {
+    router.push(`/perfil/${item.userId}`);
+  };
+
   return (
     <Animated.View style={[
       styles.rankingItem,
@@ -151,22 +157,30 @@ function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; 
           : <Text style={styles.rankingPos}>{item.posicao}º</Text>
         }
       </View>
-      <Avatar nome={item.nome} size={40} cor={item.ligaCor} />
+
+      <TouchableOpacity onPress={navegarParaPerfil}>
+        <Avatar nome={item.nome} size={40} cor={item.ligaCor} />
+      </TouchableOpacity>
+
       <View style={styles.rankingInfo}>
-        <Text style={styles.rankingNome} numberOfLines={1}>
-          {item.nome}{isMe ? ' (você)' : ''}
-        </Text>
+        <TouchableOpacity onPress={navegarParaPerfil}>
+          <Text style={styles.rankingNome} numberOfLines={1}>
+            {item.nome}{isMe ? ' (você)' : ''}
+          </Text>
+        </TouchableOpacity>
         <View style={styles.rankingLigaRow}>
           <LigaIcon size={14} color={item.ligaCor} strokeWidth={2} />
           <Text style={[styles.rankingLiga, { color: item.ligaCor }]}>{item.ligaNome}</Text>
         </View>
       </View>
+
       <Text style={styles.rankingPontos}>{item.pontos.toLocaleString()}</Text>
     </Animated.View>
   );
 }
 
 function Podio({ top3 }: { top3: RankingItem[] }) {
+  const router = useRouter();
   const scaleAnims = [0, 1, 2].map(() => useRef(new Animated.Value(0)).current);
   const fadeAnim   = useRef(new Animated.Value(0)).current;
 
@@ -182,23 +196,46 @@ function Podio({ top3 }: { top3: RankingItem[] }) {
 
   const alturas = [130, 100, 80];
   const ordem   = [1, 0, 2];
+  const coresPosicao = [
+    colors.gold,   // 1º lugar
+    colors.silver, // 2º lugar
+    colors.bronze, // 3º lugar
+  ];
+
+  const navegarParaPerfil = (userId: number) => {
+    router.push(`/perfil/${userId}`);
+  };
 
   return (
     <Animated.View style={[styles.podio, { opacity: fadeAnim }]}>
       {ordem.map((rankIdx) => {
         const item = top3[rankIdx];
         if (!item) return null;
+        const corPosicao = coresPosicao[rankIdx];
         return (
           <Animated.View
             key={item.userId}
             style={[styles.podioItem, { transform: [{ scale: scaleAnims[rankIdx] }] }]}
           >
             <IconMedal posicao={rankIdx + 1} size={36} />
-            <Avatar nome={item.nome} size={44} cor={item.ligaCor} />
-            <Text style={styles.podioNome} numberOfLines={1}>{item.nome.split(' ')[0]}</Text>
+            <TouchableOpacity onPress={() => navegarParaPerfil(item.userId)}>
+              <Avatar nome={item.nome} size={44} cor={item.ligaCor} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navegarParaPerfil(item.userId)}>
+              <Text style={[styles.podioNome, { color: corPosicao }]} numberOfLines={1}>
+                {item.nome.split(' ')[0]}
+              </Text>
+            </TouchableOpacity>
             <Text style={styles.podioPontos}>{item.pontos.toLocaleString()}</Text>
-            <View style={[styles.podioBase, { height: alturas[rankIdx], backgroundColor: item.ligaCor + '22', borderColor: item.ligaCor + '55' }]}>
-              <Text style={[styles.podioPosicao, { color: item.ligaCor }]}>{rankIdx + 1}º</Text>
+            <View style={[
+              styles.podioBase,
+              {
+                height: alturas[rankIdx],
+                backgroundColor: corPosicao + '22',
+                borderColor: corPosicao + '55'
+              }
+            ]}>
+              <Text style={[styles.podioPosicao, { color: corPosicao }]}>{rankIdx + 1}º</Text>
             </View>
           </Animated.View>
         );
@@ -305,7 +342,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20, paddingVertical: 30,
     backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.background,
-
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
   tabs: {
@@ -347,7 +383,7 @@ const styles = StyleSheet.create({
   ligaAtualBadgeText: { fontSize: 10, color: colors.white, fontWeight: '700' },
   podio: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 8, paddingVertical: 8 },
   podioItem: { alignItems: 'center', flex: 1 },
-  podioNome: { fontSize: 12, fontWeight: '700', color: colors.text, marginTop: 4, maxWidth: 80, textAlign: 'center' },
+  podioNome: { fontSize: 12, fontWeight: '700', marginTop: 4, maxWidth: 80, textAlign: 'center' },
   podioPontos: { fontSize: 11, color: colors.textSecondary, marginBottom: 6 },
   podioBase: { width: '100%', borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   podioPosicao: { fontSize: 20, fontWeight: '700' },

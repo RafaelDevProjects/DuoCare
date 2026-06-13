@@ -266,20 +266,28 @@ function CardRecomendacao({ desafio, onIniciar, loading }: {
   );
 }
 
-// ─── Mini card de post ────────────────────────────────────────
+// ─── Mini card de post (com navegação para perfil) ────────────
 function MiniPost({ post }: { post: Post }) {
+  const router = useRouter();
+
+  const navegarParaPerfil = () => {
+    router.push(`/perfil/${post.userId}`);
+  };
+
   return (
-    <View style={st.miniPost}>
-      <Avatar nome={post.nomeUsuario} size={34} />
-      <View style={{ flex: 1 }}>
-        <Text style={st.miniPostNome}>{post.nomeUsuario}</Text>
-        <Text style={st.miniPostTexto} numberOfLines={2}>{post.conteudo}</Text>
+    <TouchableOpacity onPress={navegarParaPerfil} activeOpacity={0.7}>
+      <View style={st.miniPost}>
+        <Avatar nome={post.nomeUsuario} size={34} />
+        <View style={{ flex: 1 }}>
+          <Text style={st.miniPostNome}>{post.nomeUsuario}</Text>
+          <Text style={st.miniPostTexto} numberOfLines={2}>{post.conteudo}</Text>
+        </View>
+        <View style={st.miniPostMeta}>
+          <IconHeart size={13} color={colors.error} />
+          <Text style={st.miniPostCount}>{post.totalCurtidas}</Text>
+        </View>
       </View>
-      <View style={st.miniPostMeta}>
-        <IconHeart size={13} color={colors.error} />
-        <Text style={st.miniPostCount}>{post.totalCurtidas}</Text>
-      </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -292,6 +300,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [conexoes, setConexoes] = useState(0);
   const [ativos, setAtivos] = useState<UserDesafio[]>([]);
+  const [desafiosConcluidos, setDesafiosConcluidos] = useState(0);
   const [disponiveis, setDisponiveis] = useState<Desafio[]>([]);
   const [liga, setLiga] = useState<LigaInfo | null>(null);
   const [feed, setFeed] = useState<Post[]>([]);
@@ -302,14 +311,21 @@ export default function HomeScreen() {
 
   async function carregar() {
     try {
-      const [conRes, ativRes, dispRes, feedRes] = await Promise.all([
+      const [conRes, todosDesafiosRes, dispRes, feedRes] = await Promise.all([
         conexaoService.listar(),
-        desafioService.meusDesafios(),
+        desafioService.meusTodosDesafios(), // NOVO endpoint
         desafioService.listarDisponiveis(),
         postService.feedGlobal(0, 3),
       ]);
+      
       setConexoes(conRes.length);
-      setAtivos(ativRes);
+      
+      // Separa desafios ativos e concluídos
+      const ativosFiltrados = todosDesafiosRes.filter(d => d.status === 'EM_ANDAMENTO');
+      const concluidosFiltrados = todosDesafiosRes.filter(d => d.status === 'CONCLUIDO');
+      
+      setAtivos(ativosFiltrados);
+      setDesafiosConcluidos(concluidosFiltrados.length);
       setDisponiveis(dispRes);
       setFeed(feedRes);
 
@@ -319,7 +335,8 @@ export default function HomeScreen() {
       } catch {}
 
       await refreshUser();
-    } catch {
+    } catch (error) {
+      console.error('Erro ao carregar dashboard:', error);
       Alert.alert('Erro', 'Não foi possível carregar o dashboard.');
     } finally {
       setLoading(false);
@@ -337,7 +354,6 @@ export default function HomeScreen() {
   const idsAtivos = new Set(ativos.map(a => a.desafioId));
   const recomendado = disponiveis.find(d => !idsAtivos.has(d.id)) ?? null;
   const desafioDestaque = ativos[0] ?? null;
-  const desafiosConcluidos = ativos.filter(d => d.status === 'CONCLUIDO').length;
 
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';

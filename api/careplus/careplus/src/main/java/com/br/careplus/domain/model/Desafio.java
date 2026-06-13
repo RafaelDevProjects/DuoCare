@@ -43,4 +43,7 @@ public class Desafio {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CATEGORIA_ID")
     private CategoriaDesafio categoria;
+
+    @Column(name = "DICAS", length = 500)
+    private String dicas;
 }

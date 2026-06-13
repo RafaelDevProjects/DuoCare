@@ -1,7 +1,7 @@
 // app/(tabs)/feed.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl, TextInput,
   Modal, FlatList
 } from 'react-native';
@@ -13,11 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // Componente de Post Individual
-function PostItem({ post, onCurtir, onComentar }: { 
-  post: Post; 
+function PostItem({ post, onCurtir, onComentar }: {
+  post: Post;
   onCurtir: (id: number) => void;
   onComentar: (id: number) => void;
 }) {
+  const router = useRouter();
   const [showComments, setShowComments] = useState(false);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [novoComentario, setNovoComentario] = useState('');
@@ -51,7 +52,6 @@ function PostItem({ post, onCurtir, onComentar }: {
       const comentado = await postService.comentar(post.id, novoComentario);
       setComentarios(prev => [comentado, ...prev]);
       setNovoComentario('');
-      // Atualiza total de comentários no post
       onComentar(post.id);
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível comentar.');
@@ -65,17 +65,25 @@ function PostItem({ post, onCurtir, onComentar }: {
     setShowComments(!showComments);
   };
 
+  const navegarParaPerfil = () => {
+    router.push(`/perfil/${post.userId}`);
+  };
+
   return (
     <View style={styles.postCard}>
-      {/* Cabeçalho */}
+      {/* Cabeçalho com navegação */}
       <View style={styles.postHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {post.nomeUsuario?.charAt(0).toUpperCase() || '?'}
-          </Text>
-        </View>
+        <TouchableOpacity onPress={navegarParaPerfil}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {post.nomeUsuario?.charAt(0).toUpperCase() || '?'}
+            </Text>
+          </View>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.postNome}>{post.nomeUsuario}</Text>
+          <TouchableOpacity onPress={navegarParaPerfil}>
+            <Text style={styles.postNome}>{post.nomeUsuario}</Text>
+          </TouchableOpacity>
           <Text style={styles.postData}>{formatarData(post.criadoEm)}</Text>
         </View>
         <TouchableOpacity>
@@ -88,28 +96,22 @@ function PostItem({ post, onCurtir, onComentar }: {
 
       {/* Ações */}
       <View style={styles.postActions}>
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={() => onCurtir(post.id)}
-        >
-          <Ionicons 
-            name={post.curtidoPorMim ? 'heart' : 'heart-outline'} 
-            size={22} 
-            color={post.curtidoPorMim ? colors.error : colors.textSecondary} 
+        <TouchableOpacity style={styles.actionButton} onPress={() => onCurtir(post.id)}>
+          <Ionicons
+            name={post.curtidoPorMim ? 'heart' : 'heart-outline'}
+            size={22}
+            color={post.curtidoPorMim ? colors.error : colors.textSecondary}
           />
           <Text style={styles.actionText}>{post.totalCurtidas}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.actionButton} 
-          onPress={handleToggleComments}
-        >
+        <TouchableOpacity style={styles.actionButton} onPress={handleToggleComments}>
           <Ionicons name="chatbubble-outline" size={20} color={colors.textSecondary} />
           <Text style={styles.actionText}>{post.totalComentarios}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Comentários */}
+      {/* Seção de comentários */}
       {showComments && (
         <View style={styles.commentsSection}>
           <View style={styles.commentInputContainer}>
@@ -158,7 +160,7 @@ function PostItem({ post, onCurtir, onComentar }: {
   );
 }
 
-// Tela principal do Feed
+// Tela principal do Feed (agora com FlatList)
 export default function FeedScreen() {
   const router = useRouter();
   const { user } = useAuth();
@@ -204,8 +206,7 @@ export default function FeedScreen() {
     }
   };
 
-  const handleComentar = async (postId: number) => {
-    // Apenas atualiza contagem de comentários (já é feito no envio)
+  const handleComentar = (postId: number) => {
     setPosts(prevPosts =>
       prevPosts.map(post =>
         post.id === postId
@@ -241,7 +242,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
+      {/* Header fixo */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Feed</Text>
         <TouchableOpacity style={styles.postButton} onPress={() => setModalVisible(true)}>
@@ -250,30 +251,29 @@ export default function FeedScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <PostItem
+            post={item}
+            onCurtir={handleCurtir}
+            onComentar={handleComentar}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
-      >
-        {posts.length === 0 ? (
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="newspaper-outline" size={64} color={colors.textLight} />
             <Text style={styles.emptyText}>Nenhum post ainda.</Text>
             <Text style={styles.emptySubText}>Seja o primeiro a postar!</Text>
           </View>
-        ) : (
-          posts.map(post => (
-            <PostItem
-              key={post.id}
-              post={post}
-              onCurtir={handleCurtir}
-              onComentar={handleComentar}
-            />
-          ))
-        )}
-      </ScrollView>
+        }
+      />
 
       {/* Modal de criação de post */}
       <Modal
@@ -360,16 +360,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  scrollContent: {
+  listContent: {
     padding: 16,
     gap: 16,
+    paddingBottom: 40,
   },
   postCard: {
     backgroundColor: colors.surface,
     borderRadius: 20,
     padding: 16,
     gap: 12,
-    shadowColor: '#0000006b',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,

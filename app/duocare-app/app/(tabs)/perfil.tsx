@@ -13,10 +13,112 @@ import { desafioService } from '../../src/services/desafioService';
 import { conexaoService } from '../../src/services/conexaoService';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme/colors';
+import Svg, { Path, Circle, Polygon, Polyline, Line, Rect } from 'react-native-svg';
 
-const LIGA_EMOJI: Record<string, string> = {
-  Bronze: '🥉', Prata: '🥈', Ouro: '🥇',
-  Platina: '💎', Diamante: '💠', Safira: '🔷',
+
+// ─── Ícones (mesmos do dashboard) ────────────────────────────
+function IconStar({ size = 16, color = colors.accent }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <Polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+    </Svg>
+  );
+}
+
+function IconTrophy({ size = 18, color = colors.accent }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M8 21h8M12 17v4M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M7 4h10v7a5 5 0 0 1-10 0V4z"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function IconTarget({ size = 18, color = colors.primary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
+      <Circle cx="12" cy="12" r="6"  stroke={color} strokeWidth="1.8" />
+      <Circle cx="12" cy="12" r="2"  fill={color} />
+    </Svg>
+  );
+}
+
+function IconUsers({ size = 18, color = colors.secondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.8" />
+      <Path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function IconChevron({ size = 16, color = colors.textSecondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 18l6-6-6-6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconEdit({ size = 20, color = colors.primary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconLogout({ size = 20, color = colors.error }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Polyline points="16 17 21 12 16 7" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Line x1="21" y1="12" x2="9" y2="12" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function IconBell({ size = 20, color = colors.textSecondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconLock({ size = 20, color = colors.textSecondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke={color} strokeWidth="1.8" />
+      <Path d="M7 11V7a5 5 0 0 1 10 0v4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function IconHelp({ size = 20, color = colors.textSecondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
+      <Path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Line x1="12" y1="17" x2="12.01" y2="17" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+const LIGA_ICON: Record<string, React.ComponentType<any>> = {
+  Bronze: () => null,
+  Prata: () => null,
+  Ouro: () => null,
+  Platina: () => null,
+  Diamante: () => null,
+  Safira: () => null,
 };
 
 function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
@@ -28,8 +130,9 @@ function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   );
 }
 
-function StatCard({ emoji, valor, label, delay }: {
-  emoji: string; valor: string | number; label: string; delay: number;
+// Card de estatística com ícone SVG
+function StatCard({ icon, value, label, color: c, delay }: {
+  icon: React.ReactNode; value: string | number; label: string; color: string; delay: number;
 }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -42,11 +145,27 @@ function StatCard({ emoji, valor, label, delay }: {
   }, []);
 
   return (
-    <Animated.View style={[styles.statCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-      <Text style={styles.statEmoji}>{emoji}</Text>
-      <Text style={styles.statValor}>{valor}</Text>
+    <Animated.View style={[styles.statCard, { opacity: fadeAnim, transform: [{ scale: scaleAnim }], borderBottomColor: c + '33', borderBottomWidth: 2 }]}>
+      <View style={[styles.statIconBg, { backgroundColor: c + '1A' }]}>{icon}</View>
+      <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
+  );
+}
+
+// Menu item com ícone SVG
+function MenuItem({ icon, label, onPress, isLast }: {
+  icon: React.ReactNode; label: string; onPress?: () => void; isLast?: boolean;
+}) {
+  return (
+    <>
+      <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+        <View style={styles.menuIconWrapper}>{icon}</View>
+        <Text style={styles.menuText}>{label}</Text>
+        <IconChevron size={16} color={colors.textLight} />
+      </TouchableOpacity>
+      {!isLast && <View style={styles.menuDivider} />}
+    </>
   );
 }
 
@@ -71,13 +190,13 @@ export default function PerfilScreen() {
 
   async function carregarEstatisticas() {
     try {
-      const [ligaData, meusDesafios, conexoes] = await Promise.all([
+      const [ligaData, todosDesafios, conexoes] = await Promise.all([
         ligaService.minhaLiga(),
-        desafioService.meusDesafios(),
+        desafioService.meusTodosDesafios(),
         conexaoService.listar(),
       ]);
       setLiga(ligaData);
-      const concluidos = meusDesafios.filter(d => d.status === 'CONCLUIDO').length;
+      const concluidos = todosDesafios.filter(d => d.status === 'CONCLUIDO').length;
       setTotalDesafiosConcluidos(concluidos);
       setTotalConexoes(conexoes.length);
     } catch (error) {
@@ -141,13 +260,14 @@ export default function PerfilScreen() {
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.nome}</Text>
             {liga && (
-              <View style={styles.ligaChip}>
-                <Text style={styles.ligaChipEmoji}>{LIGA_EMOJI[liga.ligaNome] ?? '🏅'}</Text>
+              <View style={[styles.ligaChip, { backgroundColor: liga.ligaCor + '22', borderColor: liga.ligaCor + '44' }]}>
+                <IconTrophy size={14} color={liga.ligaCor} />
                 <Text style={[styles.ligaChipText, { color: liga.ligaCor }]}>{liga.ligaNome}</Text>
               </View>
             )}
           </View>
           <TouchableOpacity style={styles.btnEditar} onPress={() => setModalEditar(true)}>
+            <IconEdit size={18} color={colors.primary} />
             <Text style={styles.btnEditarText}>Editar</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -174,40 +294,60 @@ export default function PerfilScreen() {
 
         <Text style={styles.sectionTitle}>Suas estatísticas</Text>
         <View style={styles.statsGrid}>
-          <StatCard emoji="⭐" valor={(user?.pontos ?? 0).toLocaleString()} label="Pontos"    delay={0}   />
-          <StatCard emoji="🏅" valor={liga?.ligaNome ?? '—'}              label="Liga"      delay={100} />
-          <StatCard emoji="🎯" valor={totalDesafiosConcluidos}             label="Desafios"  delay={200} />
-          <StatCard emoji="🤝" valor={totalConexoes}                       label="Conexões"  delay={300} />
+          <StatCard
+            icon={<IconStar size={22} color={colors.accent} />}
+            value={(user?.pontos ?? 0).toLocaleString()}
+            label="Pontos"
+            color={colors.accent}
+            delay={0}
+          />
+          <StatCard
+            icon={<IconTrophy size={22} color={liga?.ligaCor || colors.accent} />}
+            value={liga?.ligaNome ?? '—'}
+            label="Liga"
+            color={liga?.ligaCor || colors.accent}
+            delay={100}
+          />
+          <StatCard
+            icon={<IconTarget size={22} color={colors.primary} />}
+            value={totalDesafiosConcluidos}
+            label="Desafios"
+            color={colors.primary}
+            delay={200}
+          />
+          <StatCard
+            icon={<IconUsers size={22} color={colors.secondary} />}
+            value={totalConexoes}
+            label="Conexões"
+            color={colors.secondary}
+            delay={300}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Conta</Text>
         <View style={styles.menuCard}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => setModalEditar(true)}>
-            <Text style={styles.menuEmoji}>✏️</Text>
-            <Text style={styles.menuText}>Editar perfil</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuEmoji}>🔔</Text>
-            <Text style={styles.menuText}>Notificações</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuEmoji}>🔒</Text>
-            <Text style={styles.menuText}>Privacidade</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuEmoji}>❓</Text>
-            <Text style={styles.menuText}>Ajuda</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
+          <MenuItem
+            icon={<IconEdit size={20} color={colors.primary} />}
+            label="Editar perfil"
+            onPress={() => setModalEditar(true)}
+          />
+          <MenuItem
+            icon={<IconBell size={20} color={colors.textSecondary} />}
+            label="Notificações"
+          />
+          <MenuItem
+            icon={<IconLock size={20} color={colors.textSecondary} />}
+            label="Privacidade"
+          />
+          <MenuItem
+            icon={<IconHelp size={20} color={colors.textSecondary} />}
+            label="Ajuda"
+            isLast
+          />
         </View>
 
         <TouchableOpacity style={styles.btnSair} onPress={handleLogout}>
+          <IconLogout size={20} color={colors.error} />
           <Text style={styles.btnSairText}>Sair da conta</Text>
         </TouchableOpacity>
 
@@ -292,14 +432,19 @@ const styles = StyleSheet.create({
   avatarGrandeText: { fontWeight: '700', color: colors.primary },
   userInfo: { flex: 1, gap: 6 },
   userName: { fontSize: 20, fontWeight: '700', color: colors.text },
-  ligaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  ligaChipEmoji: { fontSize: 16 },
-  ligaChipText: { fontSize: 14, fontWeight: '700' },
-  btnEditar: {
-    borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 6,
+  ligaChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: colors.accentMuted,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
+    borderWidth: 1, alignSelf: 'flex-start',
   },
-  btnEditarText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  ligaChipText: { fontSize: 13, fontWeight: '600' },
+  btnEditar: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  btnEditarText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
   ligaProgressCard: {
     backgroundColor: colors.surface, margin: 16,
     borderRadius: 16, padding: 16, gap: 10,
@@ -320,24 +465,27 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '46%', backgroundColor: colors.surface,
-    borderRadius: 14, padding: 16, alignItems: 'center', gap: 6,
+    borderRadius: 16, padding: 14, alignItems: 'center', gap: 8,
+    borderWidth: 0, borderBottomWidth: 2,
   },
-  statEmoji: { fontSize: 28 },
-  statValor: { fontSize: 20, fontWeight: '700', color: colors.text },
-  statLabel: { fontSize: 12, color: colors.textSecondary },
+  statIconBg: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  statValue: { fontSize: 20, fontWeight: '800', color: colors.text },
+  statLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
   menuCard: {
     backgroundColor: colors.surface, borderRadius: 16, marginHorizontal: 16,
     overflow: 'hidden',
   },
-  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  menuEmoji: { fontSize: 20, width: 28 },
+  menuItem: {
+    flexDirection: 'row', alignItems: 'center', padding: 16,
+    gap: 14,
+  },
+  menuIconWrapper: { width: 28, alignItems: 'center' },
   menuText: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
-  menuArrow: { fontSize: 20, color: colors.textLight },
-  menuDivider: { height: 1, backgroundColor: colors.border, marginLeft: 56 },
+  menuDivider: { height: 1, backgroundColor: colors.border, marginLeft: 58 },
   btnSair: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     marginHorizontal: 16, marginTop: 24, borderWidth: 1.5,
     borderColor: colors.error, borderRadius: 14, paddingVertical: 14,
-    alignItems: 'center',
   },
   btnSairText: { color: colors.error, fontSize: 15, fontWeight: '700' },
   versao: { textAlign: 'center', fontSize: 12, color: colors.textLight, marginTop: 16 },
