@@ -1,6 +1,4 @@
-// ============================================================
-//  app/(tabs)/conexoes.tsx
-// ============================================================
+// app/(tabs)/conexoes.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
@@ -13,13 +11,12 @@ import { conexaoService, Conexao, UserBusca } from '../../src/services/conexaoSe
 import { colors } from '../../src/theme/colors';
 import { IconSearch } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Circle, Path, Line, Polyline, Polygon } from 'react-native-svg';
-import { useSubscription } from '../../src/contexts/SocketContext'; // ✅ novo
+import { useSubscription } from '../../src/contexts/SocketContext';
 
-// ─── (ícones locais inalterados) ─────────────────────────────
 function IconConectado({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <Circle cx="7" cy="7" r="6" fill="#10B981" />
+      <Circle cx="7" cy="7" r="6" fill={colors.success} />
       <Polyline points="4,7 6,9 10,5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
@@ -27,20 +24,20 @@ function IconConectado({ size = 14 }) {
 function IconPendente({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <Circle cx="7" cy="7" r="6" stroke="#F59E0B" strokeWidth="1.5" />
-      <Line x1="7" y1="4" x2="7" y2="7.5" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" />
-      <Circle cx="7" cy="10" r="0.8" fill="#F59E0B" />
+      <Circle cx="7" cy="7" r="6" stroke={colors.warning} strokeWidth="1.5" />
+      <Line x1="7" y1="4" x2="7" y2="7.5" stroke={colors.warning} strokeWidth="1.5" strokeLinecap="round" />
+      <Circle cx="7" cy="10" r="0.8" fill={colors.warning} />
     </Svg>
   );
 }
-function IconEstrela({ size = 13, color = '#F59E0B' }) {
+function IconEstrela({ size = 13, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
     </Svg>
   );
 }
-function IconClose({ size = 14, color = '#EF4444' }) {
+function IconClose({ size = 14, color = colors.error }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Line x1="18" y1="6" x2="6" y2="18" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
@@ -66,7 +63,6 @@ function IconCheck({ size = 14, color = '#fff' }) {
   );
 }
 
-// ─── Avatar ──────────────────────────────────────────────────
 function Avatar({ nome, size = 44 }: { nome: string; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
@@ -75,8 +71,6 @@ function Avatar({ nome, size = 44 }: { nome: string; size?: number }) {
     </View>
   );
 }
-
-// ─── (ItemConexao, ItemPendente, ItemBusca, EmptyConexoes — inalterados) ──
 
 function ItemConexao({ item, index, onRemover }: {
   item: Conexao; index: number; onRemover: (id: number) => void;
@@ -222,7 +216,6 @@ function EmptyConexoes({ mensagem }: { mensagem: string }) {
   );
 }
 
-// ─── Tela Conexões ───────────────────────────────────────────
 export default function ConexoesScreen() {
   const { user } = useAuth();
   const [aba, setAba] = useState<'conexoes' | 'pendentes' | 'buscar'>('conexoes');
@@ -234,18 +227,13 @@ export default function ConexoesScreen() {
   const [buscando, setBuscando] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [solicitados, setSolicitados] = useState<Set<number>>(new Set());
-
-  // ✅ contador de novas solicitações recebidas via WebSocket (para o badge)
   const [novasSolicitacoes, setNovasSolicitacoes] = useState(0);
-
   const headerFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     carregar();
   }, []);
-
-  // ✅ Zera o badge quando o usuário abre a aba de pendentes
   useEffect(() => {
     if (aba === 'pendentes') setNovasSolicitacoes(0);
   }, [aba]);
@@ -265,27 +253,18 @@ export default function ConexoesScreen() {
       setRefreshing(false);
     }
   }
-
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, []);
 
-  // ✅ WebSocket: escuta solicitações e confirmações em tempo real
   useSubscription(
     `/topic/conexoes/${user?.userId}`,
     useCallback((payload) => {
       if (payload.tipo === 'NOVA_SOLICITACAO') {
         const novaSolicitacao = payload.dados as Conexao;
-        // Adiciona à lista de pendentes sem precisar recarregar
-        setPendentes(prev => {
-          const jaExiste = prev.some(p => p.id === novaSolicitacao.id);
-          return jaExiste ? prev : [novaSolicitacao, ...prev];
-        });
-        // Incrementa badge se não estiver na aba de pendentes
+        setPendentes(prev => [novaSolicitacao, ...prev]);
         setNovasSolicitacoes(prev => prev + 1);
         Alert.alert('Nova solicitação! 🤝', payload.mensagem);
       }
-
       if (payload.tipo === 'CONEXAO_ACEITA') {
-        // Recarrega a lista de conexões aceitas
         carregar();
         Alert.alert('Conexão aceita! 🎉', payload.mensagem);
       }
@@ -304,7 +283,6 @@ export default function ConexoesScreen() {
       setBuscando(false);
     }
   }
-
   async function handleConectar(userId: number) {
     try {
       await conexaoService.solicitar(userId);
@@ -314,7 +292,6 @@ export default function ConexoesScreen() {
       Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao enviar solicitação.');
     }
   }
-
   async function handleAceitar(conexaoId: number) {
     try {
       await conexaoService.aceitar(conexaoId);
@@ -322,23 +299,17 @@ export default function ConexoesScreen() {
       carregar();
     } catch { Alert.alert('Erro', 'Não foi possível aceitar a solicitação.'); }
   }
-
   async function handleRecusar(conexaoId: number) {
     try { await conexaoService.recusar(conexaoId); carregar(); }
     catch { Alert.alert('Erro', 'Não foi possível recusar a solicitação.'); }
   }
-
   async function handleRemover(conexaoId: number) {
     try {
       const conexao = conexoes.find(c => c.id === conexaoId);
       await conexaoService.remover(conexaoId);
       setConexoes(prev => prev.filter(c => c.id !== conexaoId));
       if (conexao) {
-        setSolicitados(prev => {
-          const next = new Set(prev);
-          next.delete(conexao.userId);
-          return next;
-        });
+        setSolicitados(prev => { const next = new Set(prev); next.delete(conexao.userId); return next; });
       }
     } catch {
       Alert.alert('Erro', 'Não foi possível remover a conexão.');
@@ -349,7 +320,6 @@ export default function ConexoesScreen() {
     return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
 
-  // ✅ total de pendentes inclui as recebidas em tempo real
   const totalPendentes = pendentes.length;
   const badgeCount = totalPendentes + novasSolicitacoes;
 
@@ -357,13 +327,10 @@ export default function ConexoesScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Animated.View style={[styles.header, { opacity: headerFade }]}>
         <Text style={styles.headerTitle}>Conexões</Text>
-        {/* ✅ Badge atualizado em tempo real */}
         {badgeCount > 0 && (
           <TouchableOpacity style={styles.badgePendente} onPress={() => setAba('pendentes')}>
             <IconPendente size={13} />
-            <Text style={styles.badgePendenteText}>
-              {badgeCount} pendente{badgeCount > 1 ? 's' : ''}
-            </Text>
+            <Text style={styles.badgePendenteText}>{badgeCount} pendente{badgeCount > 1 ? 's' : ''}</Text>
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -371,7 +338,6 @@ export default function ConexoesScreen() {
       <View style={styles.tabs}>
         {[
           { key: 'conexoes',  label: `Minhas (${conexoes.length})` },
-          // ✅ badge na tab de pendentes
           { key: 'pendentes', label: `Pendentes (${totalPendentes})${novasSolicitacoes > 0 ? ' 🔔' : ''}` },
           { key: 'buscar',    label: 'Buscar' },
         ].map(({ key, label }) => (
@@ -445,37 +411,35 @@ export default function ConexoesScreen() {
   );
 }
 
-// ─── Estilos ─────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingVertical: 14,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingHorizontal: 30, paddingVertical: 30,
+    backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.background,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
   badgePendente: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.warning + '22', paddingHorizontal: 12,
+    backgroundColor: colors.warningMuted, paddingHorizontal: 12,
     paddingVertical: 5, borderRadius: 20,
   },
   badgePendenteText: { fontSize: 12, fontWeight: '700', color: colors.warning },
   tabs: {
-    flexDirection: 'row', backgroundColor: colors.white,
+    flexDirection: 'row', backgroundColor: colors.background,
     paddingHorizontal: 12, paddingBottom: 12, gap: 6,
   },
-  tab: { flex: 1, paddingVertical: 7, borderRadius: 10, alignItems: 'center', backgroundColor: colors.background },
+  tab: { flex: 1, paddingVertical: 7, borderRadius: 10, alignItems: 'center', backgroundColor: colors.border },
   tabActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 11, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.white },
   listContent: { padding: 16, gap: 10, paddingBottom: 40 },
   itemCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.white, borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 14,
   },
-  itemCardPendente: { borderColor: colors.warning + '55', backgroundColor: '#FFFBEB' },
+  itemCardPendente: { borderWidth: 1, borderColor: colors.warning + '55' },
   itemInfo: { flex: 1, gap: 4 },
   itemNome: { fontSize: 15, fontWeight: '700', color: colors.text },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -483,7 +447,7 @@ const styles = StyleSheet.create({
   itemBio: { fontSize: 12, color: colors.textSecondary },
   btnRemover: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.errorLight, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.errorMuted, alignItems: 'center', justifyContent: 'center',
   },
   pendenteBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   btnAceitar: {
@@ -502,7 +466,7 @@ const styles = StyleSheet.create({
   buscaInputRow: {
     flexDirection: 'row', gap: 10,
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   buscaInputWrapper: {
     flex: 1, height: 44, flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -518,8 +482,7 @@ const styles = StyleSheet.create({
   btnBuscarText: { color: colors.white, fontWeight: '700', fontSize: 14 },
   itemBusca: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.white, borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 14,
   },
   btnConectar: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -529,11 +492,11 @@ const styles = StyleSheet.create({
   btnConectarDisabled: { backgroundColor: colors.border },
   btnConectarText: { color: colors.white, fontSize: 13, fontWeight: '700' },
   btnConectarTextDisabled: { color: colors.textSecondary },
-  avatar: { backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontWeight: '700', color: colors.primaryDark },
+  avatar: { backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontWeight: '700', color: colors.primary },
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 10 },
   emptyMascote: { width: 130, height: 130 },
-  emptySombra: { width: 65, height: 10, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.08)', marginTop: 2 },
+  emptySombra: { width: 65, height: 10, borderRadius: 50, backgroundColor: 'rgba(0, 0, 0, 0.1)', marginTop: 2 },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 },
 });

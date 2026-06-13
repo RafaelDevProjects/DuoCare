@@ -1,11 +1,9 @@
-// ============================================================
-//  app/(tabs)/perfil.tsx
-// ============================================================
+// app/(tabs)/perfil.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator, Alert, Animated,
-  Easing, Modal, Image, KeyboardAvoidingView, Platform,
+  Easing, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,7 +19,6 @@ const LIGA_EMOJI: Record<string, string> = {
   Platina: '💎', Diamante: '💠', Safira: '🔷',
 };
 
-// ─── Avatar grande ───────────────────────────────────────────
 function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
@@ -31,7 +28,6 @@ function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   );
 }
 
-// ─── Card de estatística ─────────────────────────────────────
 function StatCard({ emoji, valor, label, delay }: {
   emoji: string; valor: string | number; label: string; delay: number;
 }) {
@@ -54,7 +50,6 @@ function StatCard({ emoji, valor, label, delay }: {
   );
 }
 
-// ─── Tela Perfil ─────────────────────────────────────────────
 export default function PerfilScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -67,44 +62,25 @@ export default function PerfilScreen() {
   const [bio, setBio]   = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  const headerFade  = useRef(new Animated.Value(0)).current;
-  const mascoteSlide = useRef(new Animated.Value(30)).current;
-  const floatAnim   = useRef(new Animated.Value(0)).current;
+  const headerFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(headerFade,   { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(mascoteSlide, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: -8, duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0,  duration: 2000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ])
-    ).start();
-
+    Animated.timing(headerFade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
     carregarEstatisticas();
   }, []);
 
   async function carregarEstatisticas() {
     try {
-      // Busca liga, desafios e conexões em paralelo
       const [ligaData, meusDesafios, conexoes] = await Promise.all([
         ligaService.minhaLiga(),
         desafioService.meusDesafios(),
         conexaoService.listar(),
       ]);
       setLiga(ligaData);
-      
-      // Conta quantos desafios estão concluídos
       const concluidos = meusDesafios.filter(d => d.status === 'CONCLUIDO').length;
       setTotalDesafiosConcluidos(concluidos);
-      
-      // Total de conexões (amigos aceitos)
       setTotalConexoes(conexoes.length);
     } catch (error) {
-      // Se algum serviço falhar, apenas não atualiza (valores continuam 0)
       console.error('Erro ao carregar estatísticas do perfil:', error);
     } finally {
       setLoading(false);
@@ -123,7 +99,6 @@ export default function PerfilScreen() {
       });
       Alert.alert('✅ Perfil atualizado!', 'Suas informações foram salvas.');
       setModalEditar(false);
-      // Recarrega os dados para atualizar possíveis mudanças
       carregarEstatisticas();
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar o perfil.');
@@ -161,19 +136,7 @@ export default function PerfilScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* Header com mascote */}
-        <Animated.View style={[styles.heroSection, { opacity: headerFade }]}>
-          <Animated.Image
-            source={require('../../assets/mascote.png')}
-            style={[styles.mascote, { transform: [{ translateY: floatAnim }, { translateY: mascoteSlide }] }]}
-            resizeMode="contain"
-          />
-          <View style={styles.emptySombra} />
-        </Animated.View>
-
-        {/* Info do usuário */}
-        <View style={styles.userSection}>
+        <Animated.View style={[styles.userSection, { opacity: headerFade }]}>
           <AvatarGrande nome={user?.nome ?? ''} size={80} />
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.nome}</Text>
@@ -187,9 +150,8 @@ export default function PerfilScreen() {
           <TouchableOpacity style={styles.btnEditar} onPress={() => setModalEditar(true)}>
             <Text style={styles.btnEditarText}>Editar</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        {/* Progresso da liga */}
         {liga && (
           <View style={styles.ligaProgressCard}>
             <View style={styles.ligaProgressHeader}>
@@ -210,7 +172,6 @@ export default function PerfilScreen() {
           </View>
         )}
 
-        {/* Stats */}
         <Text style={styles.sectionTitle}>Suas estatísticas</Text>
         <View style={styles.statsGrid}>
           <StatCard emoji="⭐" valor={(user?.pontos ?? 0).toLocaleString()} label="Pontos"    delay={0}   />
@@ -219,7 +180,6 @@ export default function PerfilScreen() {
           <StatCard emoji="🤝" valor={totalConexoes}                       label="Conexões"  delay={300} />
         </View>
 
-        {/* Menu de ações */}
         <Text style={styles.sectionTitle}>Conta</Text>
         <View style={styles.menuCard}>
           <TouchableOpacity style={styles.menuItem} onPress={() => setModalEditar(true)}>
@@ -247,7 +207,6 @@ export default function PerfilScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Botão sair */}
         <TouchableOpacity style={styles.btnSair} onPress={handleLogout}>
           <Text style={styles.btnSairText}>Sair da conta</Text>
         </TouchableOpacity>
@@ -255,7 +214,6 @@ export default function PerfilScreen() {
         <Text style={styles.versao}>Care Plus v1.0.0</Text>
       </ScrollView>
 
-      {/* Modal editar perfil */}
       <Modal visible={modalEditar} animationType="slide" onRequestClose={() => setModalEditar(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <SafeAreaView style={styles.modalContainer}>
@@ -314,30 +272,24 @@ export default function PerfilScreen() {
   );
 }
 
-// ─── Estilos (inalterados) ───────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 40 },
-
-  heroSection: { alignItems: 'center', paddingTop: 24, paddingBottom: 8, backgroundColor: colors.white },
-  mascote: { width: 120, height: 120 },
-  emptySombra: {
-    width: 60, height: 8, borderRadius: 30,
-    backgroundColor: 'rgba(0,0,0,0.07)', marginTop: 4,
-  },
-
   userSection: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: colors.white, paddingHorizontal: 20,
-    paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   avatarGrande: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: colors.primary + '44',
   },
-  avatarGrandeText: { fontWeight: '700', color: colors.primaryDark },
+  avatarGrandeText: { fontWeight: '700', color: colors.primary },
   userInfo: { flex: 1, gap: 6 },
   userName: { fontSize: 20, fontWeight: '700', color: colors.text },
   ligaChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -348,11 +300,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 6,
   },
   btnEditarText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
-
   ligaProgressCard: {
-    backgroundColor: colors.white, margin: 16,
+    backgroundColor: colors.surface, margin: 16,
     borderRadius: 16, padding: 16, gap: 10,
-    borderWidth: 1, borderColor: colors.border,
   },
   ligaProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   ligaProgressTitulo: { fontSize: 15, fontWeight: '700', color: colors.text },
@@ -360,7 +310,6 @@ const styles = StyleSheet.create({
   progressBar: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
   ligaProgressSub: { fontSize: 12, color: colors.textSecondary },
-
   sectionTitle: {
     fontSize: 16, fontWeight: '700', color: colors.text,
     paddingHorizontal: 16, marginBottom: 8, marginTop: 8,
@@ -370,38 +319,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, gap: 10, marginBottom: 8,
   },
   statCard: {
-    width: '46%', backgroundColor: colors.white,
+    width: '46%', backgroundColor: colors.surface,
     borderRadius: 14, padding: 16, alignItems: 'center', gap: 6,
-    borderWidth: 1, borderColor: colors.border,
   },
   statEmoji: { fontSize: 28 },
   statValor: { fontSize: 20, fontWeight: '700', color: colors.text },
   statLabel: { fontSize: 12, color: colors.textSecondary },
-
   menuCard: {
-    backgroundColor: colors.white, borderRadius: 16, marginHorizontal: 16,
-    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+    backgroundColor: colors.surface, borderRadius: 16, marginHorizontal: 16,
+    overflow: 'hidden',
   },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   menuEmoji: { fontSize: 20, width: 28 },
   menuText: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
   menuArrow: { fontSize: 20, color: colors.textLight },
   menuDivider: { height: 1, backgroundColor: colors.border, marginLeft: 56 },
-
   btnSair: {
     marginHorizontal: 16, marginTop: 24, borderWidth: 1.5,
     borderColor: colors.error, borderRadius: 14, paddingVertical: 14,
     alignItems: 'center',
   },
   btnSairText: { color: colors.error, fontSize: 15, fontWeight: '700' },
-
-  versao: {
-    textAlign: 'center', fontSize: 12, color: colors.textLight,
-    marginTop: 16,
-  },
-
-  // Modal editar
-  modalContainer: { flex: 1, backgroundColor: colors.white },
+  versao: { textAlign: 'center', fontSize: 12, color: colors.textLight, marginTop: 16 },
+  modalContainer: { flex: 1, backgroundColor: colors.background },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
@@ -409,14 +349,10 @@ const styles = StyleSheet.create({
   },
   modalTitulo: { fontSize: 17, fontWeight: '700', color: colors.text },
   modalCancelar: { fontSize: 16, color: colors.textSecondary },
-  modalSalvarBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: 16,
-    paddingVertical: 8, borderRadius: 10,
-  },
+  modalSalvarBtn: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   modalSalvarText: { color: colors.white, fontWeight: '700', fontSize: 14 },
   modalContent: { padding: 20, gap: 20 },
   modalAvatarWrapper: { alignItems: 'center', paddingVertical: 8 },
-
   fieldGroup: { gap: 8 },
   label: { fontSize: 13, fontWeight: '600', color: colors.text },
   input: {

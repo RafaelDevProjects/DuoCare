@@ -1,6 +1,4 @@
-// ============================================================
-//  app/(tabs)/liga.tsx — com ícones SVG
-// ============================================================
+// app/(tabs)/liga.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -13,12 +11,11 @@ import { colors } from '../../src/theme/colors';
 import {
   IconBronze, IconPrata, IconOuro, IconPlatina, IconDiamante, IconSafira,
 } from '../../src/components/icons/CarePlusIcons';
-import Svg, { Path, Polygon } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
-// ─── Ícone de medalha para o pódio ───────────────────────────
 function IconMedal({ posicao, size = 32 }: { posicao: number; size?: number }) {
-  const medalCores = ['#F59E0B', '#9CA3AF', '#CD7F32'];
-  const cor = medalCores[posicao - 1] ?? '#9CA3AF';
+  const medalCores = [colors.gold, colors.silver, colors.bronze];
+  const cor = medalCores[posicao - 1] ?? colors.silver;
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <Path d="M16 4l3 6h7l-5.5 4.5 2 7L16 18l-6.5 3.5 2-7L6 10h7z"
@@ -29,36 +26,33 @@ function IconMedal({ posicao, size = 32 }: { posicao: number; size?: number }) {
   );
 }
 
-// ─── Config das ligas com ícones SVG ─────────────────────────
 const LIGA_CONFIG: Record<string, {
   desc: string;
   Icon: React.ComponentType<any>;
   cor: string;
 }> = {
-  Bronze:   { desc: 'Iniciante',    Icon: IconBronze,   cor: '#CD7F32' },
-  Prata:    { desc: 'Comprometido', Icon: IconPrata,    cor: '#9CA3AF' },
-  Ouro:     { desc: 'Dedicado',     Icon: IconOuro,     cor: '#F59E0B' },
-  Platina:  { desc: 'Avançado',     Icon: IconPlatina,  cor: '#6B7280' },
-  Diamante: { desc: 'Elite',        Icon: IconDiamante, cor: '#3B82F6' },
-  Safira:   { desc: 'Lendário',     Icon: IconSafira,   cor: '#0F52BA' },
+  Bronze:   { desc: 'Iniciante',    Icon: IconBronze,   cor: colors.bronze },
+  Prata:    { desc: 'Comprometido', Icon: IconPrata,    cor: colors.silver },
+  Ouro:     { desc: 'Dedicado',     Icon: IconOuro,     cor: colors.gold },
+  Platina:  { desc: 'Avançado',     Icon: IconPlatina,  cor: colors.platinum },
+  Diamante: { desc: 'Elite',        Icon: IconDiamante, cor: colors.diamond },
+  Safira:   { desc: 'Lendário',     Icon: IconSafira,   cor: colors.sapphire },
 };
 
-// ─── Avatar com iniciais ─────────────────────────────────────
 function Avatar({ nome, size = 40, cor }: { nome: string; size?: number; cor?: string }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
     <View style={[
       styles.avatar,
-      { width: size, height: size, borderRadius: size / 2, backgroundColor: cor ? `${cor}22` : colors.primaryLight },
+      { width: size, height: size, borderRadius: size / 2, backgroundColor: cor ? `${cor}22` : colors.primaryMuted },
     ]}>
-      <Text style={[styles.avatarText, { fontSize: size * 0.38, color: cor ?? colors.primaryDark }]}>
+      <Text style={[styles.avatarText, { fontSize: size * 0.38, color: cor ?? colors.primary }]}>
         {iniciais}
       </Text>
     </View>
   );
 }
 
-// ─── Card da minha liga ──────────────────────────────────────
 function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -76,13 +70,11 @@ function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
       Animated.timing(fadeAnim,  { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }),
     ]).start();
-
     Animated.timing(barAnim, {
       toValue: Math.min(progresso, 100) / 100,
       duration: 1200, delay: 400,
       easing: Easing.out(Easing.cubic), useNativeDriver: false,
     }).start();
-
     Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, { toValue: -6, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
@@ -101,7 +93,6 @@ function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
         />
         <View style={styles.cardLigaInfo}>
           <View style={styles.ligaBadge}>
-            {/* Ícone SVG da liga */}
             <View style={[styles.ligaIconWrapper, { backgroundColor: liga.ligaCor + '18' }]}>
               <LigaIcon size={36} color={liga.ligaCor} strokeWidth={1.8} />
             </View>
@@ -113,7 +104,6 @@ function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
           <Text style={styles.ligaPontos}>{liga.pontos.toLocaleString()} pts</Text>
         </View>
       </View>
-
       <View style={styles.ligaProgressWrapper}>
         <View style={styles.ligaProgressBar}>
           <Animated.View style={[
@@ -134,11 +124,9 @@ function CardMinhaLiga({ liga }: { liga: LigaInfo }) {
   );
 }
 
-// ─── Item do ranking ─────────────────────────────────────────
 function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; meId: number }) {
   const slideAnim = useRef(new Animated.Value(60)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-
   const config = LIGA_CONFIG[item.ligaNome];
   const LigaIcon = config?.Icon ?? IconBronze;
 
@@ -157,16 +145,13 @@ function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; 
       isMe && styles.rankingItemMe,
       { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
     ]}>
-      {/* Posição: ícone de medalha para top 3, número para o resto */}
       <View style={styles.rankingPosWrapper}>
         {item.posicao <= 3
           ? <IconMedal posicao={item.posicao} size={28} />
           : <Text style={styles.rankingPos}>{item.posicao}º</Text>
         }
       </View>
-
       <Avatar nome={item.nome} size={40} cor={item.ligaCor} />
-
       <View style={styles.rankingInfo}>
         <Text style={styles.rankingNome} numberOfLines={1}>
           {item.nome}{isMe ? ' (você)' : ''}
@@ -176,13 +161,11 @@ function ItemRanking({ item, index, meId }: { item: RankingItem; index: number; 
           <Text style={[styles.rankingLiga, { color: item.ligaCor }]}>{item.ligaNome}</Text>
         </View>
       </View>
-
       <Text style={styles.rankingPontos}>{item.pontos.toLocaleString()}</Text>
     </Animated.View>
   );
 }
 
-// ─── Pódio top 3 animado ─────────────────────────────────────
 function Podio({ top3 }: { top3: RankingItem[] }) {
   const scaleAnims = [0, 1, 2].map(() => useRef(new Animated.Value(0)).current);
   const fadeAnim   = useRef(new Animated.Value(0)).current;
@@ -224,7 +207,6 @@ function Podio({ top3 }: { top3: RankingItem[] }) {
   );
 }
 
-// ─── Tela Liga ───────────────────────────────────────────────
 export default function LigaScreen() {
   const { user } = useAuth();
   const [liga, setLiga] = useState<LigaInfo | null>(null);
@@ -281,7 +263,6 @@ export default function LigaScreen() {
         {aba === 'minha' ? (
           <>
             {liga && <CardMinhaLiga liga={liga} />}
-
             <Text style={styles.sectionTitle}>Todas as ligas</Text>
             <View style={styles.ligasGrid}>
               {Object.entries(LIGA_CONFIG).map(([nome, cfg]) => {
@@ -289,7 +270,6 @@ export default function LigaScreen() {
                 const ativa = liga?.ligaNome === nome;
                 return (
                   <View key={nome} style={[styles.ligaGridItem, ativa && { borderColor: cfg.cor, backgroundColor: cfg.cor + '11' }]}>
-                    {/* Ícone SVG da liga no grid */}
                     <View style={[styles.ligaGridIconWrapper, { backgroundColor: cfg.cor + '18' }]}>
                       <LigaIcon size={28} color={cfg.cor} strokeWidth={1.8} />
                     </View>
@@ -319,34 +299,27 @@ export default function LigaScreen() {
   );
 }
 
-// ─── Estilos ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered:  { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
   header: {
-    paddingHorizontal: 20, paddingVertical: 14,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingHorizontal: 20, paddingVertical: 30,
+    backgroundColor: colors.background, borderBottomWidth: 1, borderBottomColor: colors.background,
+
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
-
   tabs: {
-    flexDirection: 'row', backgroundColor: colors.white,
+    flexDirection: 'row', backgroundColor: colors.background,
     paddingHorizontal: 20, paddingBottom: 12, gap: 8,
   },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.background },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.border },
   tabActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.white },
-
   scrollContent: { padding: 16, gap: 16, paddingBottom: 40 },
-
-  // Card liga
   cardLiga: {
-    backgroundColor: colors.white, borderRadius: 20, padding: 20,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 20,
     borderWidth: 2, gap: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
   },
   cardLigaTop: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   ligaMascote: { width: 80, height: 80 },
@@ -356,17 +329,14 @@ const styles = StyleSheet.create({
   ligaNome: { fontSize: 22, fontWeight: '700' },
   ligaDesc: { fontSize: 13, color: colors.textSecondary },
   ligaPontos: { fontSize: 28, fontWeight: '700', color: colors.text },
-
   ligaProgressWrapper: { gap: 6 },
   ligaProgressBar: { height: 10, backgroundColor: colors.border, borderRadius: 5, overflow: 'hidden' },
   ligaProgressFill: { height: '100%', borderRadius: 5 },
   ligaProgressText: { fontSize: 12, color: colors.textSecondary },
-
-  // Grid ligas
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   ligasGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   ligaGridItem: {
-    width: '30%', backgroundColor: colors.white, borderRadius: 14,
+    width: '30%', backgroundColor: colors.surface, borderRadius: 14,
     padding: 12, alignItems: 'center', gap: 6,
     borderWidth: 1.5, borderColor: colors.border,
   },
@@ -375,22 +345,17 @@ const styles = StyleSheet.create({
   ligaGridDesc: { fontSize: 10, color: colors.textSecondary, textAlign: 'center' },
   ligaAtualBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 2 },
   ligaAtualBadgeText: { fontSize: 10, color: colors.white, fontWeight: '700' },
-
-  // Pódio
   podio: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 8, paddingVertical: 8 },
   podioItem: { alignItems: 'center', flex: 1 },
   podioNome: { fontSize: 12, fontWeight: '700', color: colors.text, marginTop: 4, maxWidth: 80, textAlign: 'center' },
   podioPontos: { fontSize: 11, color: colors.textSecondary, marginBottom: 6 },
   podioBase: { width: '100%', borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   podioPosicao: { fontSize: 20, fontWeight: '700' },
-
-  // Ranking
   rankingItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.white, borderRadius: 14, padding: 12,
-    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 12,
   },
-  rankingItemMe: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  rankingItemMe: { borderColor: colors.primary, borderWidth: 1, backgroundColor: colors.primaryMuted },
   rankingPosWrapper: { width: 32, alignItems: 'center' },
   rankingPos: { fontSize: 15, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
   rankingInfo: { flex: 1 },
@@ -398,8 +363,6 @@ const styles = StyleSheet.create({
   rankingLigaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   rankingLiga: { fontSize: 12, fontWeight: '600' },
   rankingPontos: { fontSize: 15, fontWeight: '700', color: colors.text },
-
-  // Avatar
   avatar: { alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontWeight: '700' },
 });

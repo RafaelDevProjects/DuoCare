@@ -1,8 +1,5 @@
-// ============================================================
-//  app/(tabs)/desafios.tsx — com ícones SVG
-// ============================================================
+// app/(tabs)/desafios.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useSubscription } from '../../src/contexts/SocketContext';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert, Modal,
@@ -16,9 +13,9 @@ import {
   IconCorrida, IconHidratacao, IconMeditacao, IconNutricao,
 } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Path, Polygon } from 'react-native-svg';
+import { useSubscription } from '../../src/contexts/SocketContext';
 
-// ─── Ícone de estrela para pontos ────────────────────────────
-function IconEstrela({ size = 16, color = '#F59E0B' }) {
+function IconEstrela({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <Polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
@@ -26,11 +23,10 @@ function IconEstrela({ size = 16, color = '#F59E0B' }) {
   );
 }
 
-// ─── Helpers ────────────────────────────────────────────────
 const NIVEL_CONFIG = {
-  FACIL:   { label: 'Fácil',   color: colors.success, bg: '#F0FDF4' },
-  MEDIO:   { label: 'Médio',   color: colors.warning, bg: '#FFFBEB' },
-  DIFICIL: { label: 'Difícil', color: colors.error,   bg: colors.errorLight },
+  FACIL:   { label: 'Fácil',   color: colors.success, bg: colors.successMuted },
+  MEDIO:   { label: 'Médio',   color: colors.warning, bg: colors.warningMuted },
+  DIFICIL: { label: 'Difícil', color: colors.error,   bg: colors.errorMuted },
 };
 
 const CATEGORIA_ICON: Record<string, React.ComponentType<any>> = {
@@ -40,7 +36,6 @@ const CATEGORIA_ICON: Record<string, React.ComponentType<any>> = {
   NUTRICAO:   IconNutricao,
 };
 
-// ─── Empty state com mascote flutuando ───────────────────────
 function EmptyDesafios({ onExplorar }: { onExplorar: () => void }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -72,7 +67,6 @@ function EmptyDesafios({ onExplorar }: { onExplorar: () => void }) {
   );
 }
 
-// ─── Card de desafio ativo animado ───────────────────────────
 function CardAtivo({ ud, onAtualizar, index }: {
   ud: UserDesafio;
   onAtualizar: () => void;
@@ -169,7 +163,6 @@ function CardAtivo({ ud, onAtualizar, index }: {
   );
 }
 
-// ─── Card de desafio disponível animado ─────────────────────
 function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   desafio: Desafio;
   jaIniciado: boolean;
@@ -219,7 +212,7 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
 
       <View style={styles.cardDispFooter}>
         <View style={styles.pontosContainer}>
-          <IconEstrela size={16} color="#F59E0B" />
+          <IconEstrela size={16} color={colors.accent} />
           <Text style={styles.pontosText}>{desafio.pontosRecompensa} pts</Text>
         </View>
         <TouchableOpacity
@@ -237,7 +230,6 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   );
 }
 
-// ─── Tela principal ─────────────────────────────────────────
 export default function DesafiosScreen() {
   const { user, refreshUser } = useAuth();
   const [aba, setAba] = useState<'ativos' | 'disponiveis'>('ativos');
@@ -250,26 +242,14 @@ export default function DesafiosScreen() {
   const tabSlide   = useRef(new Animated.Value(-20)).current;
   const idsAtivos  = new Set(ativos.map((a) => a.desafioId));
 
-  // ✅ WebSocket: escuta conclusão de desafios em tempo real
   useSubscription(
     `/topic/desafios/${user?.userId}`,
     useCallback((payload) => {
       if (payload.tipo === 'DESAFIO_CONCLUIDO') {
         const udConcluido = payload.dados as UserDesafio;
-
-        // Atualiza o card do desafio na lista (status e pontuação)
-        setAtivos(prev =>
-          prev.map(ud => ud.id === udConcluido.id ? udConcluido : ud)
-        );
-
-        // Atualiza pontos do usuário no contexto de autenticação
+        setAtivos(prev => prev.map(ud => ud.id === udConcluido.id ? udConcluido : ud));
         refreshUser();
-
-        Alert.alert(
-          '🏆 Desafio concluído!',
-          payload.mensagem,
-          [{ text: 'Eba!', style: 'default' }]
-        );
+        Alert.alert('🏆 Desafio concluído!', payload.mensagem);
       }
     }, [])
   );
@@ -281,11 +261,8 @@ export default function DesafiosScreen() {
     ]).start();
   }, []);
 
-  
-
   async function carregar() {
     try {
-      // 🔁 Atualiza os pontos do usuário no contexto antes de carregar os desafios
       await refreshUser();
       const [meusRes, dispRes] = await Promise.all([
         desafioService.meusDesafios(),
@@ -302,7 +279,6 @@ export default function DesafiosScreen() {
   }
 
   useEffect(() => { carregar(); }, []);
-
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, []);
 
   async function iniciarDesafio(desafioId: number) {
@@ -328,7 +304,7 @@ export default function DesafiosScreen() {
           <Text style={styles.headerSub}>{ativos.length} desafio{ativos.length !== 1 ? 's' : ''} em andamento</Text>
         </View>
         <View style={styles.pontosChip}>
-          <IconEstrela size={14} color={colors.primaryDark} />
+          <IconEstrela size={14} color={colors.accent} />
           <Text style={styles.pontosChipText}>{user?.pontos ?? 0}</Text>
         </View>
       </Animated.View>
@@ -389,40 +365,35 @@ export default function DesafiosScreen() {
   );
 }
 
-// ─── Estilos ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingHorizontal: 20, paddingTop: 30, paddingBottom: 30,
+    backgroundColor: colors.background, borderBottomWidth: 0, borderBottomColor: colors.border,
   },
   headerGreeting: { fontSize: 20, fontWeight: '700', color: colors.text },
   headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   pontosChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.primaryLight, paddingHorizontal: 14,
+    backgroundColor: colors.accentMuted, paddingHorizontal: 14,
     paddingVertical: 6, borderRadius: 20,
   },
-  pontosChipText: { fontSize: 14, fontWeight: '700', color: colors.primaryDark },
-
+  pontosChipText: { fontSize: 14, fontWeight: '700', color: colors.accent },
   tabs: {
-    flexDirection: 'row', backgroundColor: colors.white,
-    paddingHorizontal: 20, paddingBottom: 12, gap: 8,
+    flexDirection: 'row', backgroundColor: colors.background,
+    paddingHorizontal: 30, paddingBottom: 30, gap: 8,
   },
-  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.background },
+  tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center', backgroundColor: colors.border },
   tabActive: { backgroundColor: colors.primary },
   tabText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
   tabTextActive: { color: colors.white },
-
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 12, paddingBottom: 32 },
-
   cardAtivo: {
-    backgroundColor: colors.white, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: colors.border, gap: 12,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+    gap: 12,
   },
   cardAtivoHeader: { gap: 4 },
   cardAtivoTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -432,19 +403,18 @@ const styles = StyleSheet.create({
   progressBar: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
   btnAtualizar: {
-    backgroundColor: colors.primaryLight, borderRadius: 10,
+    backgroundColor: colors.primaryMuted, borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
-  btnAtualizarText: { fontSize: 14, fontWeight: '700', color: colors.primaryDark },
-
+  btnAtualizarText: { fontSize: 14, fontWeight: '700', color: colors.primary },
   cardDisp: {
-    backgroundColor: colors.white, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: colors.border, gap: 10,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+    gap: 10,
   },
   cardDispTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   cardDispIconWrapper: {
     width: 52, height: 52, borderRadius: 14,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
     alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
@@ -461,17 +431,15 @@ const styles = StyleSheet.create({
   btnIniciarDisabled: { backgroundColor: colors.border },
   btnIniciarText: { fontSize: 14, fontWeight: '700', color: colors.white },
   btnIniciarTextDisabled: { color: colors.textSecondary },
-
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 12 },
   emptyMascote: { width: 150, height: 150 },
-  emptySombra: { width: 75, height: 10, borderRadius: 40, backgroundColor: 'rgba(0,0,0,0.08)', marginTop: 4 },
+  emptySombra: { width: 75, height: 10, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 4 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: 32 },
   emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 12, marginTop: 8 },
   emptyBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
-
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
+  modalBox: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
   modalSub: { fontSize: 14, color: colors.textSecondary },
   modalLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
