@@ -6,6 +6,7 @@ import {
   Easing, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { conexaoService, Conexao, UserBusca } from '../../src/services/conexaoService';
 import { colors } from '../../src/theme/colors';
@@ -13,6 +14,7 @@ import { IconSearch } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Circle, Path, Line, Polyline, Polygon } from 'react-native-svg';
 import { useSubscription } from '../../src/contexts/SocketContext';
 
+// ─── Ícones ──────────────────────────────────────────────
 function IconConectado({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
@@ -21,6 +23,7 @@ function IconConectado({ size = 14 }) {
     </Svg>
   );
 }
+
 function IconPendente({ size = 14 }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
@@ -30,6 +33,17 @@ function IconPendente({ size = 14 }) {
     </Svg>
   );
 }
+
+function IconEnviado({ size = 14 }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 14 14" fill="none">
+      <Circle cx="7" cy="7" r="6" stroke={colors.primary} strokeWidth="1.5" />
+      <Line x1="7" y1="4" x2="7" y2="7.5" stroke={colors.primary} strokeWidth="1.5" strokeLinecap="round" />
+      <Circle cx="7" cy="10" r="0.8" fill={colors.primary} />
+    </Svg>
+  );
+}
+
 function IconEstrela({ size = 13, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -37,6 +51,7 @@ function IconEstrela({ size = 13, color = colors.accent }) {
     </Svg>
   );
 }
+
 function IconClose({ size = 14, color = colors.error }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -45,6 +60,7 @@ function IconClose({ size = 14, color = colors.error }) {
     </Svg>
   );
 }
+
 function IconUserPlus({ size = 14, color = '#fff' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -55,6 +71,7 @@ function IconUserPlus({ size = 14, color = '#fff' }) {
     </Svg>
   );
 }
+
 function IconCheck({ size = 14, color = '#fff' }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -63,17 +80,21 @@ function IconCheck({ size = 14, color = '#fff' }) {
   );
 }
 
-function Avatar({ nome, size = 44 }: { nome: string; size?: number }) {
+// ─── Avatar clicável ──────────────────────────────────────
+function Avatar({ nome, size = 44, onPress }: { nome: string; size?: number; onPress?: () => void }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Text style={[styles.avatarText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
-    </View>
+    <TouchableOpacity onPress={onPress} disabled={!onPress}>
+      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
+        <Text style={[styles.avatarText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
-function ItemConexao({ item, index, onRemover }: {
-  item: Conexao; index: number; onRemover: (id: number) => void;
+// ─── Item de conexão aceita ───────────────────────────────
+function ItemConexao({ item, index, onRemover, onPressAvatar }: {
+  item: Conexao; index: number; onRemover: (id: number) => void; onPressAvatar: (userId: number) => void;
 }) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -85,7 +106,7 @@ function ItemConexao({ item, index, onRemover }: {
   }, []);
   return (
     <Animated.View style={[styles.itemCard, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-      <Avatar nome={item.nome} size={48} />
+      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <View style={styles.statusRow}>
@@ -106,10 +127,9 @@ function ItemConexao({ item, index, onRemover }: {
   );
 }
 
-function ItemPendente({ item, index, onAceitar, onRecusar }: {
-  item: Conexao; index: number;
-  onAceitar: (id: number) => void;
-  onRecusar: (id: number) => void;
+// ─── Item de solicitação recebida (pendente) ──────────────
+function ItemPendente({ item, index, onAceitar, onRecusar, onPressAvatar }: {
+  item: Conexao; index: number; onAceitar: (id: number) => void; onRecusar: (id: number) => void; onPressAvatar: (userId: number) => void;
 }) {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -125,7 +145,7 @@ function ItemPendente({ item, index, onAceitar, onRecusar }: {
   async function handleRecusar() { setLoadingRecusar(true); await onRecusar(item.id); setLoadingRecusar(false); }
   return (
     <Animated.View style={[styles.itemCard, styles.itemCardPendente, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-      <Avatar nome={item.nome} size={48} />
+      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <View style={styles.statusRow}>
@@ -134,16 +154,10 @@ function ItemPendente({ item, index, onAceitar, onRecusar }: {
         </View>
         <View style={styles.pendenteBtns}>
           <TouchableOpacity style={styles.btnAceitar} onPress={handleAceitar} disabled={loadingAceitar}>
-            {loadingAceitar
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <><IconCheck size={13} color={colors.white} /><Text style={styles.btnAceitarText}>Aceitar</Text></>
-            }
+            {loadingAceitar ? <ActivityIndicator color={colors.white} size="small" /> : <><IconCheck size={13} color={colors.white} /><Text style={styles.btnAceitarText}>Aceitar</Text></>}
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnRecusar} onPress={handleRecusar} disabled={loadingRecusar}>
-            {loadingRecusar
-              ? <ActivityIndicator color={colors.error} size="small" />
-              : <><IconClose size={13} color={colors.textSecondary} /><Text style={styles.btnRecusarText}>Recusar</Text></>
-            }
+            {loadingRecusar ? <ActivityIndicator color={colors.error} size="small" /> : <><IconClose size={13} color={colors.textSecondary} /><Text style={styles.btnRecusarText}>Recusar</Text></>}
           </TouchableOpacity>
         </View>
       </View>
@@ -151,8 +165,44 @@ function ItemPendente({ item, index, onAceitar, onRecusar }: {
   );
 }
 
-function ItemBusca({ item, onConectar, jaSolicitado }: {
-  item: UserBusca; onConectar: (id: number) => void; jaSolicitado: boolean;
+// Item de solicitação enviada (pendente) com botão cancelar
+function ItemEnviado({ item, index, onCancelar, onPressAvatar }: {
+  item: Conexao; index: number; onCancelar: (receptorId: number) => void; onPressAvatar: (userId: number) => void;
+}) {
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 350, delay: index * 80, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 350, delay: index * 80, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+  }, []);
+  async function handleCancelar() {
+    setLoading(true);
+    await onCancelar(item.userId);
+    setLoading(false);
+  }
+  return (
+    <Animated.View style={[styles.itemCard, styles.itemCardEnviado, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
+      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
+      <View style={styles.itemInfo}>
+        <Text style={styles.itemNome}>{item.nome}</Text>
+        <View style={styles.statusRow}>
+          <IconEnviado size={13} />
+          <Text style={[styles.itemStatus, { color: colors.primary }]}>Solicitação enviada</Text>
+        </View>
+      </View>
+      <TouchableOpacity style={styles.btnCancelar} onPress={handleCancelar} disabled={loading}>
+        {loading ? <ActivityIndicator size="small" color={colors.error} /> : <Text style={styles.btnCancelarText}>Cancelar</Text>}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// ─── Item de busca ─────────────────────────────────────────
+function ItemBusca({ item, onConectar, jaSolicitado, onPressAvatar }: {
+  item: UserBusca; onConectar: (id: number) => void; jaSolicitado: boolean; onPressAvatar: (userId: number) => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   function handlePress() {
@@ -164,7 +214,7 @@ function ItemBusca({ item, onConectar, jaSolicitado }: {
   }
   return (
     <Animated.View style={[styles.itemBusca, { transform: [{ scale: scaleAnim }] }]}>
-      <Avatar nome={item.nome} size={44} />
+      <Avatar nome={item.nome} size={44} onPress={() => onPressAvatar(item.id)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         {item.bio ? (
@@ -177,7 +227,7 @@ function ItemBusca({ item, onConectar, jaSolicitado }: {
         )}
       </View>
       <TouchableOpacity
-        style={[styles.btnConectar, jaSolicitado && styles.btnConectarDisabled]}
+        style={[styles.btnConectarBusca, jaSolicitado && styles.btnConectarDisabled]}
         onPress={handlePress}
         disabled={jaSolicitado}
       >
@@ -190,6 +240,7 @@ function ItemBusca({ item, onConectar, jaSolicitado }: {
   );
 }
 
+// ─── Empty state ───────────────────────────────────────────
 function EmptyConexoes({ mensagem }: { mensagem: string }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -216,11 +267,14 @@ function EmptyConexoes({ mensagem }: { mensagem: string }) {
   );
 }
 
+// ─── Tela principal ────────────────────────────────────────
 export default function ConexoesScreen() {
+  const router = useRouter();
   const { user } = useAuth();
-  const [aba, setAba] = useState<'conexoes' | 'pendentes' | 'buscar'>('conexoes');
+  const [aba, setAba] = useState<'conexoes' | 'pendentes' | 'enviadas' | 'buscar'>('conexoes');
   const [conexoes, setConexoes] = useState<Conexao[]>([]);
   const [pendentes, setPendentes] = useState<Conexao[]>([]);
+  const [enviadas, setEnviadas] = useState<Conexao[]>([]);
   const [resultadoBusca, setResultadoBusca] = useState<UserBusca[]>([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [loading, setLoading] = useState(true);
@@ -230,22 +284,23 @@ export default function ConexoesScreen() {
   const [novasSolicitacoes, setNovasSolicitacoes] = useState(0);
   const headerFade = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    carregar();
-  }, []);
-  useEffect(() => {
-    if (aba === 'pendentes') setNovasSolicitacoes(0);
-  }, [aba]);
-
   async function carregar() {
     try {
-      const [conRes, penRes] = await Promise.all([
+      const [conRes, penRes, envRes] = await Promise.all([
         conexaoService.listar(),
         conexaoService.pendentes(),
+        conexaoService.enviadas(),
       ]);
       setConexoes(conRes);
       setPendentes(penRes);
+      setEnviadas(envRes);
+      
+      // IDs de usuários que não podem receber nova solicitação
+      const idsIndisponiveis = new Set<number>();
+      conRes.forEach(c => idsIndisponiveis.add(c.userId));
+      penRes.forEach(p => idsIndisponiveis.add(p.userId));
+      envRes.forEach(e => idsIndisponiveis.add(e.userId));
+      setSolicitados(idsIndisponiveis);
     } catch {
       Alert.alert('Erro', 'Não foi possível carregar conexões.');
     } finally {
@@ -253,6 +308,12 @@ export default function ConexoesScreen() {
       setRefreshing(false);
     }
   }
+
+  useEffect(() => {
+    Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    carregar();
+  }, []);
+
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, []);
 
   useSubscription(
@@ -261,6 +322,7 @@ export default function ConexoesScreen() {
       if (payload.tipo === 'NOVA_SOLICITACAO') {
         const novaSolicitacao = payload.dados as Conexao;
         setPendentes(prev => [novaSolicitacao, ...prev]);
+        setSolicitados(prev => new Set([...prev, novaSolicitacao.userId]));
         setNovasSolicitacoes(prev => prev + 1);
         Alert.alert('Nova solicitação! 🤝', payload.mensagem);
       }
@@ -276,51 +338,93 @@ export default function ConexoesScreen() {
     setBuscando(true);
     try {
       const resultado = await conexaoService.buscar(termoBusca.trim());
-      setResultadoBusca(resultado.filter(u => u.id !== user?.userId));
+      // Filtra o próprio usuário e aqueles que já são conexões ou têm pendência
+      const filtrados = resultado.filter(u => 
+        u.id !== user?.userId && !solicitados.has(u.id)
+      );
+      setResultadoBusca(filtrados);
     } catch {
       Alert.alert('Erro', 'Não foi possível buscar usuários.');
     } finally {
       setBuscando(false);
     }
   }
+
   async function handleConectar(userId: number) {
+    // Marca imediatamente como pendente
+    setSolicitados(prev => new Set([...prev, userId]));
     try {
       await conexaoService.solicitar(userId);
-      setSolicitados(prev => new Set([...prev, userId]));
       Alert.alert('Solicitação enviada!', 'Aguarde a pessoa aceitar.');
+      await carregar(); // recarrega para sincronizar
     } catch (error: any) {
-      Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao enviar solicitação.');
+      if (error.response?.status === 409) {
+        Alert.alert('Aviso', 'Já existe uma solicitação pendente entre vocês.');
+        await carregar();
+      } else {
+        Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao enviar solicitação.');
+        // Remove a marcação local se erro não for 409
+        setSolicitados(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+      }
     }
   }
+
   async function handleAceitar(conexaoId: number) {
     try {
       await conexaoService.aceitar(conexaoId);
       Alert.alert('Conexão aceita!', 'Vocês agora estão conectados!');
-      carregar();
+      await carregar();
     } catch { Alert.alert('Erro', 'Não foi possível aceitar a solicitação.'); }
   }
+
   async function handleRecusar(conexaoId: number) {
-    try { await conexaoService.recusar(conexaoId); carregar(); }
-    catch { Alert.alert('Erro', 'Não foi possível recusar a solicitação.'); }
+    try {
+      await conexaoService.recusar(conexaoId);
+      await carregar();
+    } catch { Alert.alert('Erro', 'Não foi possível recusar a solicitação.'); }
   }
+
   async function handleRemover(conexaoId: number) {
     try {
-      const conexao = conexoes.find(c => c.id === conexaoId);
       await conexaoService.remover(conexaoId);
       setConexoes(prev => prev.filter(c => c.id !== conexaoId));
-      if (conexao) {
-        setSolicitados(prev => { const next = new Set(prev); next.delete(conexao.userId); return next; });
-      }
     } catch {
       Alert.alert('Erro', 'Não foi possível remover a conexão.');
     }
   }
 
+  async function handleCancelarEnviada(receptorId: number) {
+    Alert.alert('Cancelar solicitação', 'Deseja cancelar essa solicitação?', [
+      { text: 'Não', style: 'cancel' },
+      {
+        text: 'Sim',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await conexaoService.cancelar(receptorId);
+            Alert.alert('Solicitação cancelada');
+            await carregar();
+          } catch (error: any) {
+            Alert.alert('Erro', error.response?.data?.mensagem || 'Não foi possível cancelar.');
+          }
+        },
+      },
+    ]);
+  }
+
+  const goToPerfil = (userId: number) => {
+    router.push(`/perfil/${userId}`);
+  };
+
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
 
-  const totalPendentes = pendentes.length;
+  const totalPendentes = pendentes.length + enviadas.length;
   const badgeCount = totalPendentes + novasSolicitacoes;
 
   return (
@@ -338,7 +442,8 @@ export default function ConexoesScreen() {
       <View style={styles.tabs}>
         {[
           { key: 'conexoes',  label: `Minhas (${conexoes.length})` },
-          { key: 'pendentes', label: `Pendentes (${totalPendentes})${novasSolicitacoes > 0 ? ' 🔔' : ''}` },
+          { key: 'pendentes', label: `Recebidas (${pendentes.length})${novasSolicitacoes > 0 ? ' 🔔' : ''}` },
+          { key: 'enviadas',  label: `Enviadas (${enviadas.length})` },
           { key: 'buscar',    label: 'Buscar' },
         ].map(({ key, label }) => (
           <TouchableOpacity
@@ -371,10 +476,7 @@ export default function ConexoesScreen() {
               onPress={handleBuscar}
               disabled={buscando}
             >
-              {buscando
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={styles.btnBuscarText}>Buscar</Text>
-              }
+              {buscando ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={styles.btnBuscarText}>Buscar</Text>}
             </TouchableOpacity>
           </View>
           <FlatList
@@ -382,27 +484,37 @@ export default function ConexoesScreen() {
             keyExtractor={item => String(item.id)}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={termoBusca ? null : <EmptyConexoes mensagem="Busque por nome para encontrar pessoas" />}
+            ListEmptyComponent={termoBusca ? <EmptyConexoes mensagem="Nenhum usuário encontrado" /> : <EmptyConexoes mensagem="Busque por nome para encontrar pessoas" />}
             renderItem={({ item }) => (
-              <ItemBusca item={item} onConectar={handleConectar} jaSolicitado={solicitados.has(item.id)} />
+              <ItemBusca
+                item={item}
+                onConectar={handleConectar}
+                jaSolicitado={false} // já não aparecem na lista se forem pendentes
+                onPressAvatar={goToPerfil}
+              />
             )}
           />
         </View>
       ) : (
         <FlatList
-          data={aba === 'conexoes' ? conexoes : pendentes}
+          data={aba === 'conexoes' ? conexoes : aba === 'pendentes' ? pendentes : enviadas}
           keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
-            <EmptyConexoes mensagem={aba === 'conexoes' ? 'Nenhuma conexão ainda' : 'Sem solicitações pendentes'} />
+            <EmptyConexoes mensagem={
+              aba === 'conexoes' ? 'Nenhuma conexão ainda' :
+              aba === 'pendentes' ? 'Sem solicitações recebidas' : 'Nenhuma solicitação enviada'
+            } />
           }
           renderItem={({ item, index }) =>
             aba === 'conexoes' ? (
-              <ItemConexao item={item} index={index} onRemover={handleRemover} />
+              <ItemConexao item={item} index={index} onRemover={handleRemover} onPressAvatar={goToPerfil} />
+            ) : aba === 'pendentes' ? (
+              <ItemPendente item={item} index={index} onAceitar={handleAceitar} onRecusar={handleRecusar} onPressAvatar={goToPerfil} />
             ) : (
-              <ItemPendente item={item} index={index} onAceitar={handleAceitar} onRecusar={handleRecusar} />
+              <ItemEnviado item={item} index={index} onCancelar={handleCancelarEnviada} onPressAvatar={goToPerfil} />
             )
           }
         />
@@ -411,6 +523,7 @@ export default function ConexoesScreen() {
   );
 }
 
+// ─── Estilos (mantidos iguais) ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -440,6 +553,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: 16, padding: 14,
   },
   itemCardPendente: { borderWidth: 1, borderColor: colors.warning + '55' },
+  itemCardEnviado: { borderWidth: 1, borderColor: colors.primary + '55' },
   itemInfo: { flex: 1, gap: 4 },
   itemNome: { fontSize: 15, fontWeight: '700', color: colors.text },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -449,6 +563,11 @@ const styles = StyleSheet.create({
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: colors.errorMuted, alignItems: 'center', justifyContent: 'center',
   },
+  btnCancelar: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: colors.errorMuted, borderWidth: 1, borderColor: colors.error,
+  },
+  btnCancelarText: { color: colors.error, fontWeight: '600', fontSize: 12 },
   pendenteBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
   btnAceitar: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -484,7 +603,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: colors.surface, borderRadius: 16, padding: 14,
   },
-  btnConectar: {
+  btnConectarBusca: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: colors.primary, borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 7,

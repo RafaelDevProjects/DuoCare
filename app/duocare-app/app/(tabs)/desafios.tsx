@@ -1,5 +1,5 @@
 // app/(tabs)/desafios.tsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, ActivityIndicator, Alert, Modal,
@@ -11,12 +11,28 @@ import { desafioService, UserDesafio, Desafio } from '../../src/services/desafio
 import { colors } from '../../src/theme/colors';
 import {
   IconCorrida, IconHidratacao, IconMeditacao, IconNutricao,
+  IconForca,
 } from '../../src/components/icons/CarePlusIcons';
 import Svg, { Path, Polygon, Circle, Line } from 'react-native-svg';
 import { useSubscription } from '../../src/contexts/SocketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+
+const CATEGORIA_CONFIG: Record<string, { nome: string; Icon: React.ComponentType<any>; cor: string }> = {
+  CORRIDA:    { nome: 'Corrida',    Icon: IconCorrida,    cor: colors.success },
+  HIDRATACAO: { nome: 'Hidratação', Icon: IconHidratacao, cor: colors.primary },
+  MEDITACAO:  { nome: 'Meditação',  Icon: IconMeditacao,  cor: colors.accent },
+  NUTRICAO:   { nome: 'Nutrição',   Icon: IconNutricao,   cor: colors.warning },
+  FORCA:      { nome: 'Força',      Icon: IconForca,      cor: colors.forca ?? '#EF4444' },
+};
+
+const CATEGORIAS = Object.entries(CATEGORIA_CONFIG).map(([key, val]) => ({
+  key,
+  nome: val.nome,
+  Icon: val.Icon,
+  cor: val.cor,
+}));
 
 function IconEstrela({ size = 16, color = colors.accent }) {
   return (
@@ -36,12 +52,15 @@ function IconInfo({ size = 16, color = colors.textSecondary }) {
   );
 }
 
-const CATEGORIA_ICON: Record<string, React.ComponentType<any>> = {
-  CORRIDA:    IconCorrida,
-  HIDRATACAO: IconHidratacao,
-  MEDITACAO:  IconMeditacao,
-  NUTRICAO:   IconNutricao,
-};
+function IconTarget({ size = 24, color = colors.primary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="2" />
+      <Circle cx="12" cy="12" r="6"  stroke={color} strokeWidth="2" />
+      <Circle cx="12" cy="12" r="2"  fill={color} />
+    </Svg>
+  );
+}
 
 const NIVEL_CONFIG = {
   FACIL:   { label: 'Fácil',   color: colors.success, bg: colors.successMuted, gradiente: ['#34D399', '#10B981'] },
@@ -139,7 +158,9 @@ function CardAtivo({ ud, onAtualizar, index }: {
   const barColor = ud.percentual >= 100 ? colors.success : ud.percentual >= 50 ? colors.primary : colors.warning;
   const nivelInfo = NIVEL_CONFIG[ud.nivel as keyof typeof NIVEL_CONFIG] || NIVEL_CONFIG.FACIL;
   const prazo = tempoRestante(ud.prazoFinal);
-  const CategoriaIcon = CATEGORIA_ICON[ud.categoriaNome] || IconCorrida;
+  const categoria = CATEGORIA_CONFIG[ud.categoriaNome];
+  const CategoriaIcon = categoria?.Icon || IconCorrida;
+  const categoriaCor = categoria?.cor || colors.primary;
 
   return (
     <>
@@ -152,8 +173,8 @@ function CardAtivo({ ud, onAtualizar, index }: {
         >
           <View style={styles.cardAtivoHeader}>
             <View style={styles.cardAtivoTitleRow}>
-              <View style={styles.cardIconWrapper}>
-                <CategoriaIcon size={28} color={nivelInfo.color} strokeWidth={1.8} />
+              <View style={[styles.cardIconWrapper, { backgroundColor: categoriaCor + '22' }]}>
+                <CategoriaIcon size={28} color={categoriaCor} strokeWidth={1.8} />
               </View>
               <Text style={styles.cardAtivoTitulo} numberOfLines={2}>{ud.tituloDesafio}</Text>
               <View style={[styles.nivelBadge, { backgroundColor: nivelInfo.bg }]}>
@@ -245,7 +266,9 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   const [showDetails, setShowDetails] = useState(false);
 
   const nivel = NIVEL_CONFIG[desafio.nivel] ?? NIVEL_CONFIG.FACIL;
-  const CategoriaIcon = CATEGORIA_ICON[desafio.categoriaNome] ?? IconCorrida;
+  const categoria = CATEGORIA_CONFIG[desafio.categoriaNome];
+  const CategoriaIcon = categoria?.Icon || IconCorrida;
+  const categoriaCor = categoria?.cor || colors.primary;
 
   useEffect(() => {
     Animated.parallel([
@@ -271,8 +294,8 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.cardDispTop}>
-          <View style={[styles.cardDispIconWrapper, { backgroundColor: nivel.bg }]}>
-            <CategoriaIcon size={32} color={nivel.color} strokeWidth={1.8} />
+          <View style={[styles.cardDispIconWrapper, { backgroundColor: categoriaCor + '22' }]}>
+            <CategoriaIcon size={32} color={categoriaCor} strokeWidth={1.8} />
           </View>
           <View style={styles.cardDispInfo}>
             <Text style={styles.cardDispTitulo} numberOfLines={2}>{desafio.titulo}</Text>
@@ -316,6 +339,54 @@ function CardDisponivel({ desafio, jaIniciado, onIniciar, index }: {
   );
 }
 
+// Componente de carrossel de categorias (sem onScroll)
+function CategoriaCarousel({ categorias, selectedKey, onSelectCategory }: {
+  categorias: { key: string; nome: string; Icon: React.ComponentType<any>; cor: string }[];
+  selectedKey: string;
+  onSelectCategory: (key: string) => void;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    const index = categorias.findIndex(c => c.key === selectedKey);
+    if (index !== -1 && containerWidth > 0 && scrollRef.current) {
+      const itemWidth = 80;
+      const offset = index * itemWidth - containerWidth / 2 + itemWidth / 2;
+      scrollRef.current.scrollTo({ x: Math.max(0, offset), animated: true });
+    }
+  }, [selectedKey, containerWidth]);
+
+  return (
+    <View style={styles.categoriaContainer} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriaScrollContent}
+      >
+        {categorias.map((cat) => {
+          const isSelected = cat.key === selectedKey;
+          return (
+            <TouchableOpacity
+              key={cat.key}
+              style={styles.categoriaItem}
+              onPress={() => onSelectCategory(cat.key)}
+              activeOpacity={0.7}
+            >
+              <cat.Icon size={28} color={isSelected ? cat.cor : colors.textSecondary} strokeWidth={1.8} />
+              <Text style={[styles.categoriaNome, isSelected && { color: cat.cor, fontWeight: '600' }]}>
+                {cat.nome}
+              </Text>
+              {isSelected && <View style={[styles.categoriaUnderline, { backgroundColor: cat.cor }]} />}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function DesafiosScreen() {
   const { user, refreshUser } = useAuth();
   const [aba, setAba] = useState<'ativos' | 'disponiveis'>('ativos');
@@ -323,10 +394,58 @@ export default function DesafiosScreen() {
   const [disponiveis, setDisponiveis] = useState<Desafio[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>('CORRIDA');
+  const [categoriaAtivaSelecionada, setCategoriaAtivaSelecionada] = useState<string>('TODOS');
 
   const headerFade = useRef(new Animated.Value(0)).current;
   const tabSlide   = useRef(new Animated.Value(-20)).current;
-  const idsAtivos  = new Set(ativos.map((a) => a.desafioId));
+
+  const categoriasAtivas = useMemo(() => {
+    const cats = new Set(ativos.map(a => a.categoriaNome));
+    return ['TODOS', ...Array.from(cats).sort()];
+  }, [ativos]);
+
+  const ativosFiltrados = useMemo(() => {
+    if (categoriaAtivaSelecionada === 'TODOS') return ativos;
+    return ativos.filter(a => a.categoriaNome === categoriaAtivaSelecionada);
+  }, [ativos, categoriaAtivaSelecionada]);
+
+  const idsAtivos = useMemo(() => new Set(ativos.map((a) => a.desafioId)), [ativos]);
+
+  const desafiosFiltrados = useMemo(() => {
+    return disponiveis.filter(d => 
+      d.categoriaNome === categoriaSelecionada && !idsAtivos.has(d.id)
+    );
+  }, [disponiveis, categoriaSelecionada, idsAtivos]);
+
+  // Ordenar por dificuldade
+  const sortByDifficulty = <T extends { nivel: string }>(items: T[]): T[] => {
+    const order: Record<string, number> = { FACIL: 0, MEDIO: 1, DIFICIL: 2 };
+    return [...items].sort((a, b) => (order[a.nivel] ?? 999) - (order[b.nivel] ?? 999));
+  };
+
+  const ativosOrdenados = useMemo(() => sortByDifficulty(ativosFiltrados), [ativosFiltrados]);
+  const disponiveisOrdenados = useMemo(() => sortByDifficulty(desafiosFiltrados), [desafiosFiltrados]);
+
+  const categoriasAtivasParaCarrossel = useMemo(() => {
+    return categoriasAtivas.map(cat => {
+      if (cat === 'TODOS') {
+        return {
+          key: 'TODOS',
+          nome: 'Todos',
+          Icon: () => <IconTarget size={24} color={colors.primary} />,
+          cor: colors.primary,
+        };
+      }
+      const config = CATEGORIA_CONFIG[cat];
+      return {
+        key: cat,
+        nome: config?.nome || cat,
+        Icon: config?.Icon || IconCorrida,
+        cor: config?.cor || colors.primary,
+      };
+    });
+  }, [categoriasAtivas]);
 
   useSubscription(
     `/topic/desafios/${user?.userId}`,
@@ -337,7 +456,7 @@ export default function DesafiosScreen() {
         refreshUser();
         Alert.alert('🎉 Parabéns!', payload.mensagem);
       }
-    }, [])
+    }, [refreshUser, user?.userId])
   );
 
   useEffect(() => {
@@ -345,6 +464,10 @@ export default function DesafiosScreen() {
       Animated.timing(headerFade, { toValue: 1, duration: 500, useNativeDriver: true }),
       Animated.timing(tabSlide,   { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
+  }, []);
+
+  useEffect(() => {
+    carregar();
   }, []);
 
   async function carregar() {
@@ -364,14 +487,13 @@ export default function DesafiosScreen() {
     }
   }
 
-  useEffect(() => { carregar(); }, []);
   const onRefresh = useCallback(() => { setRefreshing(true); carregar(); }, []);
 
   async function iniciarDesafio(desafioId: number) {
     try {
       await desafioService.iniciarDesafio(desafioId);
       Alert.alert('Desafio iniciado!', 'Boa sorte! Você consegue!');
-      carregar();
+      await carregar();
       setAba('ativos');
     } catch (error: any) {
       Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao iniciar desafio.');
@@ -381,6 +503,40 @@ export default function DesafiosScreen() {
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator size="large" color={colors.primary} /></View>;
   }
+
+  // Helper para renderizar seções agrupadas por dificuldade
+  const renderGroupedChallenges = (items: any[], isActive: boolean) => {
+    const levels = [
+      { key: 'FACIL', label: 'Fácil' },
+      { key: 'MEDIO', label: 'Médio' },
+      { key: 'DIFICIL', label: 'Difícil' },
+    ];
+    return levels.map(level => {
+      const filtered = items.filter(i => i.nivel === level.key);
+      if (filtered.length === 0) return null;
+      return (
+        <View key={level.key}>
+          <View style={styles.sectionDivider}>
+            <Text style={styles.sectionDividerText}>{level.label}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+          {filtered.map((item, idx) => (
+            isActive ? (
+              <CardAtivo key={item.id} ud={item} onAtualizar={carregar} index={idx} />
+            ) : (
+              <CardDisponivel
+                key={item.id} 
+                desafio={item}
+                jaIniciado={false}
+                onIniciar={iniciarDesafio}
+                index={idx}
+              />
+            )
+          ))}
+        </View>
+      );
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -410,11 +566,29 @@ export default function DesafiosScreen() {
           onPress={() => setAba('disponiveis')}
         >
           <Text style={[styles.tabText, aba === 'disponiveis' && styles.tabTextActive]}>
-            Disponíveis ({disponiveis.length})
+            Disponíveis ({disponiveisOrdenados.length})
           </Text>
           {aba === 'disponiveis' && <View style={styles.tabIndicator} />}
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Carrossel para ativos */}
+      {aba === 'ativos' && categoriasAtivasParaCarrossel.length > 1 && (
+        <CategoriaCarousel
+          categorias={categoriasAtivasParaCarrossel}
+          selectedKey={categoriaAtivaSelecionada}
+          onSelectCategory={setCategoriaAtivaSelecionada}
+        />
+      )}
+
+      {/* Carrossel para disponíveis */}
+      {aba === 'disponiveis' && (
+        <CategoriaCarousel
+          categorias={CATEGORIAS}
+          selectedKey={categoriaSelecionada}
+          onSelectCategory={setCategoriaSelecionada}
+        />
+      )}
 
       <ScrollView
         style={styles.scroll}
@@ -423,29 +597,19 @@ export default function DesafiosScreen() {
         showsVerticalScrollIndicator={false}
       >
         {aba === 'ativos' ? (
-          ativos.length === 0 ? (
+          ativosOrdenados.length === 0 ? (
             <EmptyDesafios onExplorar={() => setAba('disponiveis')} />
           ) : (
-            ativos.map((ud, index) => (
-              <CardAtivo key={ud.id} ud={ud} onAtualizar={carregar} index={index} />
-            ))
+            renderGroupedChallenges(ativosOrdenados, true)
           )
         ) : (
-          disponiveis.length === 0 ? (
+          disponiveisOrdenados.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>Nenhum desafio disponível</Text>
-              <Text style={styles.emptySub}>Novos desafios em breve!</Text>
+              <Text style={styles.emptySub}>Tente outra categoria ou volte mais tarde.</Text>
             </View>
           ) : (
-            disponiveis.map((d, index) => (
-              <CardDisponivel
-                key={d.id}
-                desafio={d}
-                jaIniciado={idsAtivos.has(d.id)}
-                onIniciar={iniciarDesafio}
-                index={index}
-              />
-            ))
+            renderGroupedChallenges(disponiveisOrdenados, false)
           )
         )}
       </ScrollView>
@@ -481,11 +645,31 @@ const styles = StyleSheet.create({
   tabIndicator: { position: 'absolute', bottom: 0, left: '20%', width: '60%', height: 2, backgroundColor: colors.primary, borderRadius: 2 },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 16, paddingBottom: 40 },
+  categoriaContainer: { marginVertical: 8, backgroundColor: colors.background },
+  categoriaScrollContent: { paddingHorizontal: 16, gap: 12, alignItems: 'center' },
+  categoriaItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginRight: 8,
+    minWidth: 80,
+    position: 'relative',
+  },
+  categoriaNome: { fontSize: 12, marginTop: 4, color: colors.textSecondary, fontWeight: '500' },
+  categoriaUnderline: {
+    position: 'absolute',
+    bottom: -4,
+    left: '20%',
+    width: '60%',
+    height: 2,
+    borderRadius: 2,
+  },
   cardAtivo: { borderRadius: 20, overflow: 'hidden', marginBottom: 4 },
   cardGradient: { padding: 16, borderRadius: 20, gap: 12 },
   cardAtivoHeader: { gap: 6 },
   cardAtivoTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIconWrapper: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surfaceHigh, alignItems: 'center', justifyContent: 'center' },
+  cardIconWrapper: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   cardAtivoTitulo: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
   cardAtivoSub: { fontSize: 13, color: colors.textSecondary, marginLeft: 54 },
   progressWrapper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -537,4 +721,21 @@ const styles = StyleSheet.create({
   modalCancelText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   modalConfirm: { flex: 1, backgroundColor: colors.primary, borderRadius: 30, height: 50, alignItems: 'center', justifyContent: 'center' },
   modalConfirmText: { fontSize: 16, fontWeight: '700', color: colors.white },
+  sectionDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 12,
+    paddingHorizontal: 16,
+  },
+  sectionDividerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginRight: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
 });

@@ -23,6 +23,10 @@ export interface Post {
 }
 
 export const userService = {
+    async getUserConexoesCount(userId: number): Promise<number> {
+    const response = await api.get(`/api/conexoes/${userId}/contagem`);
+    return response.data;
+  },
   async getUserProfile(userId: number): Promise<UserProfile> {
     const response = await api.get(`/api/users/${userId}`);
     return response.data;

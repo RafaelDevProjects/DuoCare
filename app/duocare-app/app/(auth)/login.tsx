@@ -178,7 +178,7 @@ export default function LoginScreen() {
 }
  
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.white },
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32 },
  
   mascooteWrapper: { alignItems: 'center', marginTop: 48, marginBottom: 8 },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border, borderRadius: 14,
     backgroundColor: colors.background, paddingHorizontal: 16, height: 52,
   },
-  inputWrapperFocused: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  inputWrapperFocused: { borderColor: colors.primary, backgroundColor: colors.background },
   input: { flex: 1, fontSize: 16, color: colors.text, height: '100%' },
   eyeButton: { padding: 4 },
   eyeText: { fontSize: 18 },

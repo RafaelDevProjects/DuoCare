@@ -15,8 +15,7 @@ import api from '../../src/services/api';
 import { colors } from '../../src/theme/colors';
 import Svg, { Path, Circle, Polygon, Polyline, Line, Rect } from 'react-native-svg';
 
-
-// ─── Ícones (mesmos do dashboard) ────────────────────────────
+// ─── Ícones ──────────────────────────────────────────────
 function IconStar({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -112,15 +111,7 @@ function IconHelp({ size = 20, color = colors.textSecondary }) {
   );
 }
 
-const LIGA_ICON: Record<string, React.ComponentType<any>> = {
-  Bronze: () => null,
-  Prata: () => null,
-  Ouro: () => null,
-  Platina: () => null,
-  Diamante: () => null,
-  Safira: () => null,
-};
-
+// ─── Componentes locais ───────────────────────────────────
 function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
@@ -130,7 +121,6 @@ function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   );
 }
 
-// Card de estatística com ícone SVG
 function StatCard({ icon, value, label, color: c, delay }: {
   icon: React.ReactNode; value: string | number; label: string; color: string; delay: number;
 }) {
@@ -153,7 +143,6 @@ function StatCard({ icon, value, label, color: c, delay }: {
   );
 }
 
-// Menu item com ícone SVG
 function MenuItem({ icon, label, onPress, isLast }: {
   icon: React.ReactNode; label: string; onPress?: () => void; isLast?: boolean;
 }) {
@@ -169,6 +158,7 @@ function MenuItem({ icon, label, onPress, isLast }: {
   );
 }
 
+// ─── Tela principal ───────────────────────────────────────
 export default function PerfilScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -193,7 +183,7 @@ export default function PerfilScreen() {
       const [ligaData, todosDesafios, conexoes] = await Promise.all([
         ligaService.minhaLiga(),
         desafioService.meusTodosDesafios(),
-        conexaoService.listar(),
+        conexaoService.listar(), // ✅ busca as conexões aceitas do usuário
       ]);
       setLiga(ligaData);
       const concluidos = todosDesafios.filter(d => d.status === 'CONCLUIDO').length;
@@ -315,6 +305,7 @@ export default function PerfilScreen() {
             color={colors.primary}
             delay={200}
           />
+          {/* 🆕 Card de Conexões */}
           <StatCard
             icon={<IconUsers size={22} color={colors.secondary} />}
             value={totalConexoes}
@@ -354,6 +345,7 @@ export default function PerfilScreen() {
         <Text style={styles.versao}>Care Plus v1.0.0</Text>
       </ScrollView>
 
+      {/* Modal de edição (igual ao original) */}
       <Modal visible={modalEditar} animationType="slide" onRequestClose={() => setModalEditar(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <SafeAreaView style={styles.modalContainer}>
@@ -412,9 +404,10 @@ export default function PerfilScreen() {
   );
 }
 
+// ─── Estilos (mantidos iguais aos originais) ─────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  centered:  { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingBottom: 40 },
   userSection: {
     flexDirection: 'row', alignItems: 'center', gap: 14,

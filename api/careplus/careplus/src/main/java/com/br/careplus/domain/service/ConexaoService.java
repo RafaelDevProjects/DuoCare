@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +19,7 @@ public class ConexaoService {
 
     private final ConexaoRepository  conexaoRepository;
     private final UserRepository     userRepository;
-    private final NotificationService notificationService; // ✅ novo
+    private final NotificationService notificationService;
 
     public List<Conexao> listarConexoes(Long userId) {
         return conexaoRepository.findConexoesAceitas(userId);
@@ -28,14 +29,27 @@ public class ConexaoService {
         return conexaoRepository.findPendentesRecebidas(userId);
     }
 
+    public List<Conexao> listarEnviadas(Long userId) {
+        return conexaoRepository.findEnviadasPendentes(userId);
+    }
+
     @Transactional
     public Conexao solicitarConexao(Long solicitanteId, Long receptorId) {
         if (solicitanteId.equals(receptorId))
             throw new IllegalArgumentException("Você não pode se conectar consigo mesmo.");
 
-        conexaoRepository.findEntreUsuarios(solicitanteId, receptorId).ifPresent(c -> {
-            throw new IllegalStateException("Já existe uma conexão ou solicitação entre vocês.");
-        });
+        Optional<Conexao> existente = conexaoRepository.findEntreUsuarios(solicitanteId, receptorId);
+
+        if (existente.isPresent()) {
+            Conexao c = existente.get();
+            // Se já são conexões aceitas, não permite nova solicitação
+            if ("ACEITO".equals(c.getStatus())) {
+                throw new IllegalStateException("Vocês já são conexões.");
+            }
+            // Remove o registro antigo (RECUSADO, PENDENTE, etc)
+            conexaoRepository.delete(c);
+            conexaoRepository.flush(); // 🔧 força a execução do DELETE no banco
+        }
 
         User solicitante = userRepository.findById(solicitanteId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
@@ -46,7 +60,6 @@ public class ConexaoService {
                 Conexao.builder().solicitante(solicitante).receptor(receptor).build()
         );
 
-        // ✅ WebSocket: avisa o receptor em tempo real sobre a nova solicitação
         ConexaoResponse responseParaReceptor = ConexaoResponse.from(conexao, receptorId);
         notificationService.notificarConexao(
                 receptorId,
@@ -70,7 +83,6 @@ public class ConexaoService {
         conexao.setStatus(aceitar ? "ACEITO" : "RECUSADO");
         Conexao salva = conexaoRepository.save(conexao);
 
-        // ✅ WebSocket: se aceito, avisa o solicitante em tempo real
         if (aceitar) {
             Long solicitanteId = conexao.getSolicitante().getId();
             ConexaoResponse responseParaSolicitante = ConexaoResponse.from(salva, solicitanteId);
@@ -98,5 +110,17 @@ public class ConexaoService {
 
     public List<User> buscarUsuarios(String nome) {
         return userRepository.searchByNome(nome);
+    }
+
+    @Transactional
+    public void cancelarSolicitacao(Long solicitanteId, Long receptorId) {
+        Conexao conexao = conexaoRepository
+                .findBySolicitanteIdAndReceptorIdAndStatus(solicitanteId, receptorId, "PENDENTE")
+                .orElseThrow(() -> new IllegalArgumentException("Solicitação pendente não encontrada."));
+        conexaoRepository.delete(conexao);
+    }
+
+    public Long contarConexoes(Long userId) {
+        return (long) conexaoRepository.findConexoesAceitas(userId).size();
     }
 }

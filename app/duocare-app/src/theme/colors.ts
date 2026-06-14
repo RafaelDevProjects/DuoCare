@@ -32,4 +32,10 @@ export const colors = {
   platinum: '#E2E8F0',
   diamond: '#67E8F9',
   sapphire: '#818CF8',
+  
+
+
+  errorLight: '#FEE2E2',
+  // Cores desafios
+  forca: '#EF4444',
 };

@@ -10,11 +10,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { userService, UserProfile, Post } from '../../src/services/userService';
 import { postService, Comentario } from '../../src/services/postService';
+import { conexaoService, Conexao } from '../../src/services/conexaoService';
 import { colors } from '../../src/theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Polygon, Polyline, Line, Rect } from 'react-native-svg';
+import api from '../../src/services/api';
 
-// ─── Ícones (mesmos do dashboard) ────────────────────────────
+
+// ─── Ícones ──────────────────────────────────────────────
 function IconStar({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -34,6 +37,17 @@ function IconTrophy({ size = 18, color = colors.accent }) {
   );
 }
 
+function IconUsers({ size = 18, color = colors.secondary }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.8" />
+      <Path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   return (
@@ -43,7 +57,6 @@ function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
   );
 }
 
-// Card de estatística com ícone SVG
 function StatCard({ icon, value, label, color: c, delay }: {
   icon: React.ReactNode; value: string | number; label: string; color: string; delay: number;
 }) {
@@ -219,6 +232,11 @@ export default function PerfilUsuarioScreen() {
   const [activeTab, setActiveTab] = useState<'posts' | 'likes'>('posts');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [conexoesCount, setConexoesCount] = useState<number>(0); // 🆕
+
+  type ConexaoStatus = 'none' | 'pending_sent' | 'pending_received' | 'connected';
+  const [conexaoStatus, setConexaoStatus] = useState<ConexaoStatus>('none');
+  const [acaoConexaoLoading, setAcaoConexaoLoading] = useState(false);
 
   const userId = parseInt(id, 10);
   const isOwnProfile = user?.userId === userId;
@@ -227,18 +245,36 @@ export default function PerfilUsuarioScreen() {
     carregarPerfil();
   }, [userId]);
 
+  useEffect(() => {
+    if (!isOwnProfile && userId && user?.userId) {
+      carregarStatusConexao();
+    }
+  }, [userId, user?.userId]);
+
   async function carregarPerfil() {
     setLoading(true);
     try {
       const perfil = await userService.getUserProfile(userId);
       setProfile(perfil);
       await carregarPosts();
+      await carregarConexoesCount(); // 🆕
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível carregar o perfil.');
       router.back();
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }
+
+  // 🆕 Buscar número de conexões do usuário
+  async function carregarConexoesCount() {
+    try {
+      const response = await api.get(`/api/conexoes/${userId}/contagem`);
+      setConexoesCount(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar contagem de conexões:', error);
+      setConexoesCount(0);
     }
   }
 
@@ -253,6 +289,119 @@ export default function PerfilUsuarioScreen() {
     } catch (error) {
       console.error(error);
     }
+  }
+
+  async function carregarStatusConexao() {
+    try {
+      const [conexoes, pendentesRecebidas, pendentesEnviadas] = await Promise.all([
+        conexaoService.listar(),
+        conexaoService.pendentes(),
+        conexaoService.enviadas(),
+      ]);
+
+      const isConnected = conexoes.some(c => c.userId === userId);
+      if (isConnected) {
+        setConexaoStatus('connected');
+        return;
+      }
+
+      const temSolicitacaoRecebida = pendentesRecebidas.some(c => c.userId === userId);
+      if (temSolicitacaoRecebida) {
+        setConexaoStatus('pending_received');
+        return;
+      }
+
+      const temSolicitacaoEnviada = pendentesEnviadas.some(c => c.userId === userId);
+      if (temSolicitacaoEnviada) {
+        setConexaoStatus('pending_sent');
+        return;
+      }
+
+      setConexaoStatus('none');
+    } catch (error) {
+      console.error('Erro ao carregar status de conexão:', error);
+    }
+  }
+
+  async function handleSolicitarConexao() {
+    if (!userId) return;
+    setAcaoConexaoLoading(true);
+    try {
+      await conexaoService.solicitar(userId);
+      Alert.alert('Solicitação enviada!', 'Aguardando a pessoa aceitar.');
+      setConexaoStatus('pending_sent');
+      setTimeout(() => carregarStatusConexao(), 2000);
+    } catch (error: any) {
+      Alert.alert('Erro', error.response?.data?.mensagem || 'Não foi possível enviar solicitação.');
+    } finally {
+      setAcaoConexaoLoading(false);
+    }
+  }
+
+  async function handleCancelarSolicitacao() {
+    if (!userId) return;
+    Alert.alert('Cancelar solicitação', `Deseja cancelar a solicitação enviada para ${profile?.nome}?`, [
+      { text: 'Não', style: 'cancel' },
+      {
+        text: 'Sim',
+        style: 'destructive',
+        onPress: async () => {
+          setAcaoConexaoLoading(true);
+          try {
+            await conexaoService.cancelar(userId);
+            setConexaoStatus('none');
+            Alert.alert('Solicitação cancelada');
+          } catch (error: any) {
+            Alert.alert('Erro', error.response?.data?.mensagem || 'Não foi possível cancelar a solicitação.');
+          } finally {
+            setAcaoConexaoLoading(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function handleAceitarConexao() {
+    if (!userId) return;
+    setAcaoConexaoLoading(true);
+    try {
+      const pendentes = await conexaoService.pendentes();
+      const conexaoPendente = pendentes.find(c => c.userId === userId);
+      if (!conexaoPendente) throw new Error('Solicitação não encontrada.');
+      await conexaoService.aceitar(conexaoPendente.id);
+      Alert.alert('Conectado!', `Agora você e ${profile?.nome} são conexões.`);
+      setConexaoStatus('connected');
+    } catch (error: any) {
+      Alert.alert('Erro', error.response?.data?.mensagem || 'Não foi possível aceitar solicitação.');
+    } finally {
+      setAcaoConexaoLoading(false);
+    }
+  }
+
+  async function handleDesconectar() {
+    if (!userId) return;
+    Alert.alert('Remover conexão', `Deseja remover ${profile?.nome} das suas conexões?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          setAcaoConexaoLoading(true);
+          try {
+            const conexoes = await conexaoService.listar();
+            const conexao = conexoes.find(c => c.userId === userId);
+            if (!conexao) throw new Error('Conexão não encontrada.');
+            await conexaoService.remover(conexao.id);
+            setConexaoStatus('none');
+            Alert.alert('Conexão removida');
+          } catch (error) {
+            Alert.alert('Erro', 'Não foi possível remover a conexão.');
+          } finally {
+            setAcaoConexaoLoading(false);
+          }
+        },
+      },
+    ]);
   }
 
   const handleCurtir = async (postId: number) => {
@@ -281,6 +430,7 @@ export default function PerfilUsuarioScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     carregarPerfil();
+    if (!isOwnProfile) carregarStatusConexao();
   };
 
   if (loading) {
@@ -304,7 +454,6 @@ export default function PerfilUsuarioScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        {/* Header com botão voltar */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -313,7 +462,6 @@ export default function PerfilUsuarioScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Informações do perfil (igual ao perfil pessoal) */}
         <View style={styles.userSection}>
           <AvatarGrande nome={profile.nome} size={80} />
           <View style={styles.userInfo}>
@@ -324,6 +472,48 @@ export default function PerfilUsuarioScreen() {
               <Text style={[styles.ligaChipText, { color: profile.ligaCor }]}>{profile.ligaNome}</Text>
             </View>
           </View>
+
+          {!isOwnProfile && (
+            <View style={styles.conexaoButtonContainer}>
+              {conexaoStatus === 'connected' && (
+                <TouchableOpacity
+                  style={[styles.btnConectar, styles.btnDesconectar]}
+                  onPress={handleDesconectar}
+                  disabled={acaoConexaoLoading}
+                >
+                  <Text style={styles.btnConectarText}>Conectado</Text>
+                </TouchableOpacity>
+              )}
+              {conexaoStatus === 'pending_received' && (
+                <TouchableOpacity
+                  style={[styles.btnConectar, styles.btnAceitar]}
+                  onPress={handleAceitarConexao}
+                  disabled={acaoConexaoLoading}
+                >
+                  <Text style={styles.btnConectarText}>Aceitar solicitação</Text>
+                </TouchableOpacity>
+              )}
+              {conexaoStatus === 'pending_sent' && (
+                <TouchableOpacity
+                  style={[styles.btnEnviado]}
+                  onPress={handleCancelarSolicitacao}
+                  disabled={acaoConexaoLoading}
+                >
+                  <Text style={styles.btnEnviadoText}>Solicitação enviada</Text>
+                </TouchableOpacity>
+              )}
+              {conexaoStatus === 'none' && (
+                <TouchableOpacity
+                  style={styles.btnConectar}
+                  onPress={handleSolicitarConexao}
+                  disabled={acaoConexaoLoading}
+                >
+                  <Text style={styles.btnConectarText}>Conectar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {isOwnProfile && (
             <TouchableOpacity style={styles.btnEditar} onPress={() => router.push('/(tabs)/perfil')}>
               <Text style={styles.btnEditarText}>Editar</Text>
@@ -331,8 +521,7 @@ export default function PerfilUsuarioScreen() {
           )}
         </View>
 
-        {/* Cards de estatísticas (mesmo estilo do perfil pessoal) */}
-        <Text style={styles.sectionTitle}>Suas estatísticas</Text>
+        <Text style={styles.sectionTitle}>Estatísticas</Text>
         <View style={styles.statsGrid}>
           <StatCard
             icon={<IconStar size={22} color={colors.accent} />}
@@ -348,9 +537,15 @@ export default function PerfilUsuarioScreen() {
             color={profile.ligaCor || colors.accent}
             delay={100}
           />
+          <StatCard
+            icon={<IconUsers size={22} color={colors.secondary} />}
+            value={conexoesCount.toLocaleString()}
+            label="Conexões"
+            color={colors.secondary}
+            delay={200}
+          />
         </View>
 
-        {/* Abas de Publicações e Curtidas */}
         <View style={styles.tabsContainer}>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'posts' && styles.tabButtonActive]}
@@ -374,7 +569,6 @@ export default function PerfilUsuarioScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Lista de posts ou curtidas */}
         {currentList.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons
@@ -401,6 +595,7 @@ export default function PerfilUsuarioScreen() {
   );
 }
 
+// ... (estilos iguais aos do arquivo anterior, sem alterações)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -417,7 +612,9 @@ const styles = StyleSheet.create({
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   userSection: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -426,42 +623,106 @@ const styles = StyleSheet.create({
   },
   avatarGrande: {
     backgroundColor: colors.primaryMuted,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: colors.primary + '44',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.primary + '44',
   },
   avatarGrandeText: { fontWeight: '700', color: colors.primary },
   userInfo: { flex: 1, gap: 6 },
   userName: { fontSize: 20, fontWeight: '700', color: colors.text },
   userBio: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   ligaChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: colors.accentMuted,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
-    borderWidth: 1, alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
   },
   ligaChipText: { fontSize: 13, fontWeight: '600' },
   btnEditar: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   btnEditarText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  conexaoButtonContainer: {
+    minWidth: 140,
+    alignItems: 'flex-end',
+  },
+  btnConectar: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnDesconectar: {
+    backgroundColor: colors.errorMuted,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  btnAceitar: {
+    backgroundColor: colors.success,
+  },
+  btnEnviado: {
+    backgroundColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+  },
+  btnConectarText: {
+    color: colors.white,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  btnEnviadoText: {
+    color: colors.textSecondary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
   sectionTitle: {
-    fontSize: 16, fontWeight: '700', color: colors.text,
-    paddingHorizontal: 16, marginBottom: 8, marginTop: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+    marginTop: 8,
   },
   statsGrid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: 12, gap: 10, marginBottom: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    gap: 10,
+    marginBottom: 8,
   },
   statCard: {
-    width: '46%', backgroundColor: colors.surface,
-    borderRadius: 16, padding: 14, alignItems: 'center', gap: 8,
-    borderWidth: 0, borderBottomWidth: 2,
+    width: '30%',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 0,
+    borderBottomWidth: 2,
   },
   statIconBg: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 20, fontWeight: '800', color: colors.text },
-  statLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+  statValue: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  statLabel: { fontSize: 12, color: colors.textSecondary, fontWeight: '500', textAlign: 'center' },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -12,7 +12,6 @@ import java.util.Optional;
 @Repository
 public interface ConexaoRepository extends JpaRepository<Conexao, Long> {
 
-    // Conexões aceitas de um usuário
     @Query("""
         SELECT c FROM Conexao c
         JOIN FETCH c.solicitante
@@ -22,7 +21,6 @@ public interface ConexaoRepository extends JpaRepository<Conexao, Long> {
         """)
     List<Conexao> findConexoesAceitas(@Param("userId") Long userId);
 
-    // Solicitações pendentes recebidas
     @Query("""
         SELECT c FROM Conexao c
         JOIN FETCH c.solicitante
@@ -30,7 +28,14 @@ public interface ConexaoRepository extends JpaRepository<Conexao, Long> {
         """)
     List<Conexao> findPendentesRecebidas(@Param("userId") Long userId);
 
-    // Verificar se já existe conexão entre dois usuários
+    // 🆕 Solicitações enviadas pendentes
+    @Query("""
+        SELECT c FROM Conexao c
+        JOIN FETCH c.receptor
+        WHERE c.solicitante.id = :userId AND c.status = 'PENDENTE'
+        """)
+    List<Conexao> findEnviadasPendentes(@Param("userId") Long userId);
+
     @Query("""
         SELECT c FROM Conexao c
         WHERE (c.solicitante.id = :userId1 AND c.receptor.id = :userId2)
@@ -45,4 +50,9 @@ public interface ConexaoRepository extends JpaRepository<Conexao, Long> {
         WHERE c.id = :id
         """)
     Optional<Conexao> findByIdComUsuarios(@Param("id") Long id);
+
+    Optional<Conexao> findBySolicitanteIdAndReceptorIdAndStatus(Long solicitanteId, Long receptorId, String status);
+
+    @Query("SELECT COUNT(c) FROM Conexao c WHERE (c.solicitante.id = :userId OR c.receptor.id = :userId) AND c.status = 'ACEITO'")
+    Long countConexoesAceitas(@Param("userId") Long userId);
 }

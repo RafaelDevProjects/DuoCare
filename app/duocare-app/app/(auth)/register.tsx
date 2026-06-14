@@ -239,7 +239,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
   },
   scroll: {
     flexGrow: 1,
@@ -330,15 +330,15 @@ const styles = StyleSheet.create({
   },
   inputWrapperFocused: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.background,
   },
   inputWrapperValid: {
     borderColor: colors.success,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: colors.background,
   },
   inputWrapperError: {
     borderColor: colors.error,
-    backgroundColor: colors.errorLight,
+    backgroundColor: colors.background,
   },
   input: {
     flex: 1,
