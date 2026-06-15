@@ -7,11 +7,13 @@ import com.br.careplus.domain.model.User;
 import com.br.careplus.domain.repository.LigaRepository;
 import com.br.careplus.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LigaService {
@@ -27,6 +29,20 @@ public class LigaService {
                 .orElseThrow(() -> new IllegalStateException("Liga não encontrada para os pontos do usuário."));
 
         return LigaResponse.from(user, liga);
+    }
+
+    public Liga buscarLigaPorUsuarioId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        return ligaRepository.findByPontos(user.getPontos())
+                .orElseGet(() -> {
+                    log.warn("Nenhuma liga encontrada para pontos: {}", user.getPontos());
+                    return Liga.builder()
+                            .nome("Bronze")
+                            .corHex("#CD7F32")
+                            .build();
+                });
     }
 
     public List<RankingItemResponse> ranking(int limite) {

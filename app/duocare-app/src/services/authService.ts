@@ -16,6 +16,7 @@ export interface UserData {
   nome: string;
   pontos: number;
   token: string;
+  fotoUrl?: string;   // adicionado (opcional)
 }
  
 export const authService = {
@@ -29,10 +30,10 @@ export const authService = {
     return response.data;
   },
 
-  async getMe(): Promise<{ userId: number; nome: string; pontos: number }> {
+  // 🔁 Adicione 'fotoUrl' no tipo de retorno
+  async getMe(): Promise<{ userId: number; nome: string; pontos: number; fotoUrl?: string }> {
     const response = await api.get('/api/users/me');
-    // UserResponse do backend retorna "id", mapeamos para "userId"
-    const { id, nome, pontos } = response.data;
-    return { userId: id, nome, pontos };
+    const { id, nome, pontos, fotoUrl } = response.data;
+    return { userId: id, nome, pontos, fotoUrl };
   },
 };

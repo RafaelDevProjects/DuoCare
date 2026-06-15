@@ -58,6 +58,22 @@ export function IconPerfil({ size = 24, color = '#0D1B2A', strokeWidth = 1.8 }: 
     </Svg>
   );
 }
+// ─── Categorias de Forca ────────────────────────────────────
+
+export function IconForca({ size = 32, color = '#0D1B2A', strokeWidth = 1.8 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      {/* Haltere - barra central */}
+      <Line x1="16" y1="8" x2="16" y2="24" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      {/* Pesos esquerdo */}
+      <Rect x="8" y="10" width="6" height="12" rx="1" stroke={color} strokeWidth={strokeWidth} />
+      {/* Pesos direito */}
+      <Rect x="18" y="10" width="6" height="12" rx="1" stroke={color} strokeWidth={strokeWidth} />
+      {/* Detalhes de força (opcional) */}
+      <Path d="M12 5l2 3M20 5l-2 3" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </Svg>
+  );
+}
  
 // ─── Categorias de desafio ────────────────────────────────────
  

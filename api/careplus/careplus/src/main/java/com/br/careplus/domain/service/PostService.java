@@ -1,34 +1,55 @@
 package com.br.careplus.domain.service;
 
+import com.br.careplus.api.dto.notification.NotificationDTO;
 import com.br.careplus.api.dto.post.*;
 import com.br.careplus.domain.model.*;
 import com.br.careplus.domain.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
-    private final PostRepository postRepository;
-    private final CurtidaRepository curtidaRepository;
-    private final ComentarioRepository comentarioRepository;
-    private final UserRepository userRepository;
-    private final DesafioRepository desafioRepository;
+    private final PostRepository          postRepository;
+    private final CurtidaRepository       curtidaRepository;
+    private final ComentarioRepository    comentarioRepository;
+    private final UserRepository          userRepository;
+    private final DesafioRepository       desafioRepository;
+    private final ConexaoRepository       conexaoRepository;
+    private final NotificationService     notificationService;
 
     public Page<PostResponse> listarFeed(Long userId, int pagina, int tamanho) {
-        Page<Post> posts = postRepository.findFeedConexoes(userId, PageRequest.of(pagina, tamanho));
-        return posts.map(p -> toResponse(p, userId));
+        return postRepository
+                .findFeedConexoes(userId, PageRequest.of(pagina, tamanho))
+                .map(p -> toResponse(p, userId));
     }
 
     public Page<PostResponse> listarFeedGlobal(Long userId, int pagina, int tamanho) {
-        Page<Post> posts = postRepository.findFeedGlobal(PageRequest.of(pagina, tamanho));
-        return posts.map(p -> toResponse(p, userId));
+        return postRepository
+                .findFeedGlobal(PageRequest.of(pagina, tamanho))
+                .map(p -> toResponse(p, userId));
+    }
+
+    public Page<PostResponse> listarPostsPorUsuario(Long currentUserId, Long targetUserId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("criadoEm").descending());
+        Page<Post> posts = postRepository.findByUserId(targetUserId, pageable);
+        return posts.map(p -> toResponse(p, currentUserId));
+    }
+
+    public Page<PostResponse> listarPostsCurtidosPorUsuario(Long currentUserId, Long targetUserId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by("criadoEm").descending());
+        Page<Post> posts = postRepository.findCurtidasByUserId(targetUserId, pageable);
+        return posts.map(p -> toResponse(p, currentUserId));
     }
 
     @Transactional
@@ -48,7 +69,10 @@ public class PostService {
         }
 
         Post post = postRepository.save(builder.build());
-        return toResponse(post, userId);
+        PostResponse response = toResponse(post, userId);
+
+        notificarConexoesNovoPost(userId, response);
+        return response;
     }
 
     @Transactional
@@ -79,6 +103,15 @@ public class PostService {
                 .conteudo(request.conteudo())
                 .build());
 
+        Long donoId = post.getUser().getId();
+        if (!donoId.equals(userId)) {
+            PostResponse postAtualizado = toResponse(post, donoId);
+            notificationService.notificarFeed(
+                    donoId,
+                    NotificationDTO.novoComentario(postAtualizado, user.getNome())
+            );
+        }
+
         return ComentarioResponse.from(comentario);
     }
 
@@ -101,9 +134,23 @@ public class PostService {
     }
 
     private PostResponse toResponse(Post p, Long userId) {
-        long curtidas = curtidaRepository.countByPostId(p.getId());
+        long curtidas    = curtidaRepository.countByPostId(p.getId());
         long comentarios = comentarioRepository.countByPostIdAndAtivoTrue(p.getId());
         boolean curtidoPorMim = curtidaRepository.existsByPostIdAndUserId(p.getId(), userId);
         return PostResponse.from(p, curtidas, comentarios, curtidoPorMim);
+    }
+
+    private void notificarConexoesNovoPost(Long autorId, PostResponse postResponse) {
+        List<Conexao> conexoes = conexaoRepository.findConexoesAceitas(autorId);
+        for (Conexao c : conexoes) {
+            Long destinatarioId = c.getSolicitante().getId().equals(autorId)
+                    ? c.getReceptor().getId()
+                    : c.getSolicitante().getId();
+
+            notificationService.notificarFeed(
+                    destinatarioId,
+                    NotificationDTO.novoPost(postResponse, postResponse.nomeUsuario())
+            );
+        }
     }
 }

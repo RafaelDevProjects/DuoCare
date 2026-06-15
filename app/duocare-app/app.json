@@ -1,5 +1,4 @@
 {
-  
   "expo": {
     "name": "duocare-app",
     "slug": "duocare-app",
@@ -23,13 +22,21 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rafael_almeida_sigoli.duocareapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O DuoCare precisa acessar sua galeria para escolher uma foto de perfil.",
+          "cameraPermission": "O DuoCare precisa acessar sua câmera para tirar uma foto de perfil."
+        }
+      ]
     ]
   }
 }

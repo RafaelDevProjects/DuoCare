@@ -11,7 +11,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    // Feed global paginado
     @Query("""
         SELECT p FROM Post p
         JOIN FETCH p.user
@@ -20,7 +19,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         """)
     Page<Post> findFeedGlobal(Pageable pageable);
 
-    // Feed apenas de conexões do usuário
     @Query("""
         SELECT p FROM Post p
         JOIN FETCH p.user u
@@ -37,4 +35,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
         ORDER BY p.criadoEm DESC
         """)
     Page<Post> findFeedConexoes(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p JOIN FETCH p.user WHERE p.user.id = :userId AND p.ativo = true ORDER BY p.criadoEm DESC")
+    Page<Post> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT p FROM Post p JOIN FETCH p.user JOIN Curtida c ON c.post.id = p.id WHERE c.user.id = :userId AND p.ativo = true ORDER BY p.criadoEm DESC")
+    Page<Post> findCurtidasByUserId(@Param("userId") Long userId, Pageable pageable);
 }

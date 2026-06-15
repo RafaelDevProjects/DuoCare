@@ -1,22 +1,17 @@
 // ============================================================
-//  app/_laxyout.tsx  — Layout raiz
+//  app/_layout.tsx  — Layout raiz com providers
 // ============================================================
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { AuthProvider } from '../src/contexts/AuthContext';
+import { SocketProvider } from '../src/contexts/SocketContext'; // ✅ novo
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      {/* SocketProvider fica dentro de AuthProvider para ter acesso ao token */}
+      <SocketProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SocketProvider>
     </AuthProvider>
   );
 }
-
-
-
-
-
-
-
-

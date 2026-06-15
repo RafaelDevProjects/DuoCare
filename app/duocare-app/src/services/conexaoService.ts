@@ -1,8 +1,6 @@
-// ============================================================
-//  src/services/conexaoService.ts
-// ============================================================
+// src/services/conexaoService.ts
 import api from './api';
- 
+
 export interface Conexao {
   id: number;
   userId: number;
@@ -11,7 +9,7 @@ export interface Conexao {
   status: string;
   criadoEm: string;
 }
- 
+
 export interface UserBusca {
   id: number;
   nome: string;
@@ -20,40 +18,49 @@ export interface UserBusca {
   bio: string | null;
   pontos: number;
 }
- 
+
 export const conexaoService = {
   async listar(): Promise<Conexao[]> {
     const response = await api.get('/api/conexoes');
     return response.data;
   },
- 
+
   async pendentes(): Promise<Conexao[]> {
     const response = await api.get('/api/conexoes/pendentes');
     return response.data;
   },
- 
+
+  // 🆕 Listar solicitações enviadas pelo usuário logado (pendentes)
+  async enviadas(): Promise<Conexao[]> {
+    const response = await api.get('/api/conexoes/enviadas');
+    return response.data;
+  },
+
   async solicitar(receptorId: number): Promise<Conexao> {
     const response = await api.post(`/api/conexoes/${receptorId}`);
     return response.data;
   },
- 
+
   async aceitar(conexaoId: number): Promise<Conexao> {
     const response = await api.patch(`/api/conexoes/${conexaoId}/aceitar`);
     return response.data;
   },
- 
+
   async recusar(conexaoId: number): Promise<Conexao> {
     const response = await api.patch(`/api/conexoes/${conexaoId}/recusar`);
     return response.data;
   },
- 
+
   async remover(conexaoId: number): Promise<void> {
     await api.delete(`/api/conexoes/${conexaoId}`);
   },
- 
+
   async buscar(nome: string): Promise<UserBusca[]> {
     const response = await api.get('/api/conexoes/buscar', { params: { nome } });
     return response.data;
   },
+
+  async cancelar(receptorId: number): Promise<void> {
+    await api.delete(`/api/conexoes/${receptorId}/cancelar`);
+}
 };
- 

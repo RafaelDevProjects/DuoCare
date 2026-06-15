@@ -41,6 +41,16 @@ public class ConexaoController {
         );
     }
 
+    // 🆕
+    @GetMapping("/enviadas")
+    @Operation(summary = "Listar solicitações enviadas pendentes")
+    public ResponseEntity<List<ConexaoResponse>> enviadas(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(
+                conexaoService.listarEnviadas(user.getId())
+                        .stream().map(c -> ConexaoResponse.from(c, user.getId())).toList()
+        );
+    }
+
     @PostMapping("/{receptorId}")
     @Operation(summary = "Enviar solicitação de conexão")
     public ResponseEntity<ConexaoResponse> solicitar(
@@ -88,5 +98,20 @@ public class ConexaoController {
                                 u.getFotoUrl(), u.getBio(), u.getPontos(), u.getCriadoEm()
                         )).toList()
         );
+    }
+
+    @DeleteMapping("/{receptorId}/cancelar")
+    @Operation(summary = "Cancelar solicitação de conexão enviada")
+    public ResponseEntity<Void> cancelar(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long receptorId) {
+        conexaoService.cancelarSolicitacao(user.getId(), receptorId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{userId}/contagem")
+    @Operation(summary = "Contar conexões de um usuário (público)")
+    public ResponseEntity<Long> contarConexoes(@PathVariable Long userId) {
+        return ResponseEntity.ok(conexaoService.contarConexoes(userId));
     }
 }

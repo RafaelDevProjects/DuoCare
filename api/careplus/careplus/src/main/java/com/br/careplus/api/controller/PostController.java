@@ -42,6 +42,26 @@ public class PostController {
         return ResponseEntity.ok(postService.listarFeedGlobal(user.getId(), pagina, tamanho));
     }
 
+    @GetMapping("/usuario/{userId}")
+    @Operation(summary = "Listar posts de um usuário específico (público)")
+    public ResponseEntity<Page<PostResponse>> postsPorUsuario(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho) {
+        return ResponseEntity.ok(postService.listarPostsPorUsuario(currentUser.getId(), userId, pagina, tamanho));
+    }
+
+    @GetMapping("/curtidas/usuario/{userId}")
+    @Operation(summary = "Listar posts curtidos por um usuário específico")
+    public ResponseEntity<Page<PostResponse>> postsCurtidosPorUsuario(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho) {
+        return ResponseEntity.ok(postService.listarPostsCurtidosPorUsuario(currentUser.getId(), userId, pagina, tamanho));
+    }
+
     @PostMapping
     @Operation(summary = "Criar post")
     public ResponseEntity<PostResponse> criar(
