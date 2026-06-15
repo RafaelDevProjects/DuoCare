@@ -6,6 +6,7 @@ interface User {
   userId: number;
   nome: string;
   pontos: number;
+  fotoUrl?: string | null;
 }
 
 interface AuthContextData {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: response.userId,
         nome: response.nome,
         pontos: response.pontos,
+        fotoUrl: response.fotoUrl,
       };
       await SecureStore.setItemAsync('careplus_token', response.token);
       await SecureStore.setItemAsync('careplus_user', JSON.stringify(userData));
@@ -95,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: updated.userId,
         nome: updated.nome,
         pontos: updated.pontos,
+        fotoUrl: updated.fotoUrl,
       };
       await SecureStore.setItemAsync('careplus_user', JSON.stringify(updatedUser));
       setUser(updatedUser);

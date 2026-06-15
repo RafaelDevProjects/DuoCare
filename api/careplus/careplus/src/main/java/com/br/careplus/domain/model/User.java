@@ -28,7 +28,8 @@ public class User implements UserDetails {
     @Column(name = "SENHA_HASH", nullable = false)
     private String senhaHash;
 
-    @Column(name = "FOTO_URL", length = 500)
+    @Lob
+    @Column(name = "FOTO_URL", columnDefinition = "CLOB")
     private String fotoUrl;
 
     @Column(name = "BIO", length = 300)

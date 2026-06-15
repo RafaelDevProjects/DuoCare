@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, ActivityIndicator, Alert, Animated,
-  Easing, Modal, KeyboardAvoidingView, Platform,
+  Easing, Modal, KeyboardAvoidingView, Platform, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,8 +14,10 @@ import { conexaoService } from '../../src/services/conexaoService';
 import api from '../../src/services/api';
 import { colors } from '../../src/theme/colors';
 import Svg, { Path, Circle, Polygon, Polyline, Line, Rect } from 'react-native-svg';
+import { selecionarImagem } from '../../src/services/imageService';
+import { atualizarFoto } from '../../src/services/userService';
 
-// ─── Ícones ──────────────────────────────────────────────
+// ─── Ícones (mantidos iguais) ──────────────────────────────────────────────
 function IconStar({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -111,9 +113,17 @@ function IconHelp({ size = 20, color = colors.textSecondary }) {
   );
 }
 
-// ─── Componentes locais ───────────────────────────────────
-function AvatarGrande({ nome, size = 80 }: { nome: string; size?: number }) {
+// ─── AvatarGrande com imagem ───────────────────────────────────
+function AvatarGrande({ nome, fotoUrl, size = 80 }: { nome: string; fotoUrl?: string | null; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  if (fotoUrl) {
+    return (
+      <Image
+        source={{ uri: fotoUrl }}
+        style={[styles.avatarGrande, { width: size, height: size, borderRadius: size / 2 }]}
+      />
+    );
+  }
   return (
     <View style={[styles.avatarGrande, { width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={[styles.avatarGrandeText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
@@ -158,10 +168,9 @@ function MenuItem({ icon, label, onPress, isLast }: {
   );
 }
 
-// ─── Tela principal ───────────────────────────────────────
 export default function PerfilScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, refreshUser, logout } = useAuth();
   const [liga, setLiga] = useState<LigaInfo | null>(null);
   const [totalDesafiosConcluidos, setTotalDesafiosConcluidos] = useState(0);
   const [totalConexoes, setTotalConexoes] = useState(0);
@@ -170,6 +179,7 @@ export default function PerfilScreen() {
   const [nome, setNome] = useState(user?.nome ?? '');
   const [bio, setBio]   = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
 
   const headerFade = useRef(new Animated.Value(0)).current;
 
@@ -183,7 +193,7 @@ export default function PerfilScreen() {
       const [ligaData, todosDesafios, conexoes] = await Promise.all([
         ligaService.minhaLiga(),
         desafioService.meusTodosDesafios(),
-        conexaoService.listar(), // ✅ busca as conexões aceitas do usuário
+        conexaoService.listar(),
       ]);
       setLiga(ligaData);
       const concluidos = todosDesafios.filter(d => d.status === 'CONCLUIDO').length;
@@ -208,6 +218,7 @@ export default function PerfilScreen() {
       });
       Alert.alert('✅ Perfil atualizado!', 'Suas informações foram salvas.');
       setModalEditar(false);
+      await refreshUser();
       carregarEstatisticas();
     } catch {
       Alert.alert('Erro', 'Não foi possível atualizar o perfil.');
@@ -230,6 +241,34 @@ export default function PerfilScreen() {
     ]);
   }
 
+  async function handleTrocarFoto() {
+    Alert.alert(
+      'Foto de perfil',
+      'Como deseja selecionar sua foto?',
+      [
+        { text: 'Galeria', onPress: () => selecionarFoto(false) },
+        { text: 'Câmera', onPress: () => selecionarFoto(true) },
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+  }
+
+  async function selecionarFoto(fromCamera: boolean) {
+    const imagemBase64 = await selecionarImagem(fromCamera);
+    if (!imagemBase64) return;
+
+    setUploadingFoto(true);
+    try {
+      await atualizarFoto(imagemBase64);
+      await refreshUser();
+      Alert.alert('Sucesso', 'Foto de perfil atualizada!');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar a foto.');
+    } finally {
+      setUploadingFoto(false);
+    }
+  }
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -246,7 +285,14 @@ export default function PerfilScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.userSection, { opacity: headerFade }]}>
-          <AvatarGrande nome={user?.nome ?? ''} size={80} />
+          <TouchableOpacity onPress={handleTrocarFoto} disabled={uploadingFoto}>
+            <AvatarGrande nome={user?.nome ?? ''} fotoUrl={user?.fotoUrl} size={80} />
+            {uploadingFoto && (
+              <View style={styles.uploadOverlay}>
+                <ActivityIndicator size="small" color={colors.white} />
+              </View>
+            )}
+          </TouchableOpacity>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.nome}</Text>
             {liga && (
@@ -305,7 +351,6 @@ export default function PerfilScreen() {
             color={colors.primary}
             delay={200}
           />
-          {/* 🆕 Card de Conexões */}
           <StatCard
             icon={<IconUsers size={22} color={colors.secondary} />}
             value={totalConexoes}
@@ -342,7 +387,7 @@ export default function PerfilScreen() {
           <Text style={styles.btnSairText}>Sair da conta</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versao}>Care Plus v1.0.0</Text>
+        <Text style={styles.versao}>DuoCare v1.0.0</Text>
       </ScrollView>
 
       {/* Modal de edição (igual ao original) */}
@@ -368,7 +413,7 @@ export default function PerfilScreen() {
 
             <ScrollView contentContainerStyle={styles.modalContent}>
               <View style={styles.modalAvatarWrapper}>
-                <AvatarGrande nome={nome || user?.nome || ''} size={80} />
+                <AvatarGrande nome={nome || user?.nome || ''} fotoUrl={user?.fotoUrl} size={80} />
               </View>
 
               <View style={styles.fieldGroup}>
@@ -404,7 +449,7 @@ export default function PerfilScreen() {
   );
 }
 
-// ─── Estilos (mantidos iguais aos originais) ─────────────────────────────────────
+// ─── Estilos (adicionando uploadOverlay) ─────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -421,6 +466,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryMuted,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 3, borderColor: colors.primary + '44',
+    overflow: 'hidden',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 40,
+    alignItems: 'center', justifyContent: 'center',
   },
   avatarGrandeText: { fontWeight: '700', color: colors.primary },
   userInfo: { flex: 1, gap: 6 },

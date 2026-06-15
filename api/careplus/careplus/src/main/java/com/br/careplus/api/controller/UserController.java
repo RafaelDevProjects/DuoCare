@@ -1,7 +1,8 @@
 package com.br.careplus.api.controller;
 
-import com.br.careplus.api.dto.user.UserProfileResponse;
+import com.br.careplus.api.dto.user.UpdateUserRequest;
 import com.br.careplus.api.dto.user.UserResponse;
+import com.br.careplus.api.dto.user.UserProfileResponse;
 import com.br.careplus.domain.model.Liga;
 import com.br.careplus.domain.model.User;
 import com.br.careplus.domain.repository.UserRepository;
@@ -9,6 +10,7 @@ import com.br.careplus.domain.service.LigaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,17 +39,16 @@ public class UserController {
         ));
     }
 
+    // 🆕 Endpoint atualizado para receber JSON no corpo
     @PutMapping("/me")
     @Operation(summary = "Atualizar perfil")
     public ResponseEntity<UserResponse> atualizar(
             @AuthenticationPrincipal User user,
-            @RequestParam(required = false) String nome,
-            @RequestParam(required = false) String bio,
-            @RequestParam(required = false) String fotoUrl) {
+            @Valid @RequestBody UpdateUserRequest request) {
 
-        if (nome != null) user.setNome(nome);
-        if (bio != null) user.setBio(bio);
-        if (fotoUrl != null) user.setFotoUrl(fotoUrl);
+        if (request.nome() != null) user.setNome(request.nome());
+        if (request.bio() != null) user.setBio(request.bio());
+        if (request.fotoUrl() != null) user.setFotoUrl(request.fotoUrl());
 
         User salvo = userRepository.save(user);
         return ResponseEntity.ok(new UserResponse(
@@ -68,11 +69,7 @@ public class UserController {
             liga = ligaService.buscarLigaPorUsuarioId(userId);
         } catch (Exception e) {
             log.warn("Erro ao buscar liga para usuário {}: {}", userId, e.getMessage());
-            // Cria uma liga padrão (Bronze) para não quebrar a resposta
-            liga = Liga.builder()
-                    .nome("Bronze")
-                    .corHex("#CD7F32")
-                    .build();
+            liga = Liga.builder().nome("Bronze").corHex("#CD7F32").build();
         }
         return ResponseEntity.ok(UserProfileResponse.from(user, liga));
     }

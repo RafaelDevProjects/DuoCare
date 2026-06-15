@@ -1,10 +1,8 @@
-// ============================================================
-//  app/(tabs)/home.tsx — Dashboard principal (tema escuro moderno)
-// ============================================================
+// app/(tabs)/home.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert, RefreshControl, Animated,
+  ActivityIndicator, Alert, RefreshControl, Animated, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,7 +14,7 @@ import { ligaService, LigaInfo } from '../../src/services/ligaService';
 import { colors } from '../../src/theme/colors';
 import Svg, { Path, Circle, Polygon, Polyline, Line, Rect } from 'react-native-svg';
 
-// ─── Ícones locais ────────────────────────────────────────────
+// ─── Ícones (mantidos) ────────────────────────────────────────────
 function IconStar({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -24,7 +22,6 @@ function IconStar({ size = 16, color = colors.accent }) {
     </Svg>
   );
 }
-
 function IconChevron({ size = 16, color = colors.textSecondary }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -32,57 +29,46 @@ function IconChevron({ size = 16, color = colors.textSecondary }) {
     </Svg>
   );
 }
-
 function IconFlame({ size = 18, color = colors.warning }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0c0-3-2-5-2-5s-1 2-3 2c0 0 2-4 0-7z"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M12 2c0 0-5 5-5 10a5 5 0 0 0 10 0c0-3-2-5-2-5s-1 2-3 2c0 0 2-4 0-7z" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
-
 function IconUsers({ size = 18, color = colors.secondary }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
       <Circle cx="9" cy="7" r="4" stroke={color} strokeWidth="1.8" />
-      <Path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <Path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
   );
 }
-
 function IconTrophy({ size = 18, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M8 21h8M12 17v4M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M7 4h10v7a5 5 0 0 1-10 0V4z"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <Path d="M8 21h8M12 17v4M7 4H4a1 1 0 0 0-1 1v3a4 4 0 0 0 4 4M17 4h3a1 1 0 0 1 1 1v3a4 4 0 0 1-4 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M7 4h10v7a5 5 0 0 1-10 0V4z" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
   );
 }
-
 function IconTarget({ size = 18, color = colors.primary }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.8" />
-      <Circle cx="12" cy="12" r="6"  stroke={color} strokeWidth="1.8" />
-      <Circle cx="12" cy="12" r="2"  fill={color} />
+      <Circle cx="12" cy="12" r="6" stroke={color} strokeWidth="1.8" />
+      <Circle cx="12" cy="12" r="2" fill={color} />
     </Svg>
   );
 }
-
 function IconHeart({ size = 16, color = colors.error }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-        stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
   );
 }
-
 function IconLightning({ size = 16, color = colors.accent }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
@@ -91,9 +77,17 @@ function IconLightning({ size = 16, color = colors.accent }) {
   );
 }
 
-// ─── Avatar ───────────────────────────────────────────────────
-function Avatar({ nome, size = 40 }: { nome: string; size?: number }) {
+// ─── Avatar com foto ──────────────────────────────────────────────
+function Avatar({ nome, fotoUrl, size = 40 }: { nome: string; fotoUrl?: string | null; size?: number }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+  if (fotoUrl) {
+    return (
+      <Image
+        source={{ uri: fotoUrl }}
+        style={[st.avatar, { width: size, height: size, borderRadius: size / 2 }]}
+      />
+    );
+  }
   return (
     <View style={[st.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
       <Text style={[st.avatarText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
@@ -102,9 +96,7 @@ function Avatar({ nome, size = 40 }: { nome: string; size?: number }) {
 }
 
 // ─── Seção header ─────────────────────────────────────────────
-function SectionHeader({ title, onPress, label = 'Ver todos' }: {
-  title: string; onPress?: () => void; label?: string;
-}) {
+function SectionHeader({ title, onPress, label = 'Ver todos' }: { title: string; onPress?: () => void; label?: string }) {
   return (
     <View style={st.sectionHeader}>
       <Text style={st.sectionTitle}>{title}</Text>
@@ -118,10 +110,8 @@ function SectionHeader({ title, onPress, label = 'Ver todos' }: {
   );
 }
 
-// ─── Card de estatística ──────────────────────────────────────
-function StatCard({ icon, value, label, color: c }: {
-  icon: React.ReactNode; value: string | number; label: string; color: string;
-}) {
+// ─── Card estatística ──────────────────────────────────────
+function StatCard({ icon, value, label, color: c }: { icon: React.ReactNode; value: string | number; label: string; color: string }) {
   return (
     <View style={[st.statCard, { borderBottomColor: c + '33', borderBottomWidth: 2 }]}>
       <View style={[st.statIconBg, { backgroundColor: c + '1A' }]}>{icon}</View>
@@ -134,18 +124,11 @@ function StatCard({ icon, value, label, color: c }: {
 // ─── Card desafio ativo ───────────────────────────────────────
 function CardDesafioAtivo({ ud }: { ud: UserDesafio }) {
   const barAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
-    Animated.timing(barAnim, {
-      toValue: Math.min(ud.percentual, 100) / 100,
-      duration: 1000, delay: 300,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(barAnim, { toValue: Math.min(ud.percentual, 100) / 100, duration: 1000, delay: 300, useNativeDriver: false }).start();
   }, []);
-
   const pct = ud.percentual;
   const barColor = pct >= 100 ? colors.success : pct >= 50 ? colors.primary : colors.accent;
-
   return (
     <View style={st.challengeCard}>
       <View style={st.challengeCardTop}>
@@ -159,13 +142,7 @@ function CardDesafioAtivo({ ud }: { ud: UserDesafio }) {
         <Text style={[st.challengePct, { color: barColor }]}>{pct.toFixed(0)}%</Text>
       </View>
       <View style={st.progressBar}>
-        <Animated.View style={[
-          st.progressFill,
-          {
-            width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-            backgroundColor: barColor,
-          },
-        ]} />
+        <Animated.View style={[st.progressFill, { width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: barColor }]} />
       </View>
     </View>
   );
@@ -174,18 +151,10 @@ function CardDesafioAtivo({ ud }: { ud: UserDesafio }) {
 // ─── Card liga ────────────────────────────────────────────────
 function CardLiga({ liga, onPress }: { liga: LigaInfo; onPress: () => void }) {
   const barAnim = useRef(new Animated.Value(0)).current;
-  const progresso = liga.pontosMaximo > liga.pontosMinimo
-    ? ((liga.pontos - liga.pontosMinimo) / (liga.pontosMaximo - liga.pontosMinimo)) * 100
-    : 100;
-
+  const progresso = liga.pontosMaximo > liga.pontosMinimo ? ((liga.pontos - liga.pontosMinimo) / (liga.pontosMaximo - liga.pontosMinimo)) * 100 : 100;
   useEffect(() => {
-    Animated.timing(barAnim, {
-      toValue: Math.min(progresso, 100) / 100,
-      duration: 1200, delay: 400,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(barAnim, { toValue: Math.min(progresso, 100) / 100, duration: 1200, delay: 400, useNativeDriver: false }).start();
   }, []);
-
   return (
     <TouchableOpacity style={st.ligaCard} onPress={onPress} activeOpacity={0.85}>
       <View style={st.ligaCardTop}>
@@ -202,34 +171,20 @@ function CardLiga({ liga, onPress }: { liga: LigaInfo; onPress: () => void }) {
         </View>
       </View>
       <View style={st.progressBar}>
-        <Animated.View style={[
-          st.progressFill,
-          {
-            width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
-            backgroundColor: liga.ligaCor,
-          },
-        ]} />
+        <Animated.View style={[st.progressFill, { width: barAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: liga.ligaCor }]} />
       </View>
       {liga.pontosParaProxima > 0 && (
-        <Text style={st.ligaProgressText}>
-          Faltam {liga.pontosParaProxima.toLocaleString()} pts para a próxima liga
-        </Text>
+        <Text style={st.ligaProgressText}>Faltam {liga.pontosParaProxima.toLocaleString()} pts para a próxima liga</Text>
       )}
     </TouchableOpacity>
   );
 }
 
 // ─── Card recomendação ────────────────────────────────────────
-const NIVEL_COLORS = {
-  FACIL: colors.success,
-  MEDIO: colors.warning,
-  DIFICIL: colors.error,
-};
+const NIVEL_COLORS = { FACIL: colors.success, MEDIO: colors.warning, DIFICIL: colors.error };
 const NIVEL_LABELS = { FACIL: 'Fácil', MEDIO: 'Médio', DIFICIL: 'Difícil' };
 
-function CardRecomendacao({ desafio, onIniciar, loading }: {
-  desafio: Desafio; onIniciar: () => void; loading: boolean;
-}) {
+function CardRecomendacao({ desafio, onIniciar, loading }: { desafio: Desafio; onIniciar: () => void; loading: boolean }) {
   const cor = NIVEL_COLORS[desafio.nivel] ?? colors.primary;
   return (
     <View style={st.recomCard}>
@@ -243,41 +198,26 @@ function CardRecomendacao({ desafio, onIniciar, loading }: {
             <View style={[st.nivelBadge, { backgroundColor: cor + '22' }]}>
               <Text style={[st.nivelText, { color: cor }]}>{NIVEL_LABELS[desafio.nivel]}</Text>
             </View>
-            <Text style={st.recomPontos}>
-              <IconStar size={11} color={colors.accent} /> {desafio.pontosRecompensa} pts
-            </Text>
+            <Text style={st.recomPontos}><IconStar size={11} color={colors.accent} /> {desafio.pontosRecompensa} pts</Text>
           </View>
         </View>
       </View>
-      {desafio.descricao ? (
-        <Text style={st.recomDesc} numberOfLines={2}>{desafio.descricao}</Text>
-      ) : null}
-      <TouchableOpacity
-        style={[st.recomBtn, loading && { opacity: 0.6 }]}
-        onPress={onIniciar}
-        disabled={loading}
-      >
-        {loading
-          ? <ActivityIndicator color={colors.white} size="small" />
-          : <Text style={st.recomBtnText}>Começar desafio</Text>
-        }
+      {desafio.descricao ? <Text style={st.recomDesc} numberOfLines={2}>{desafio.descricao}</Text> : null}
+      <TouchableOpacity style={[st.recomBtn, loading && { opacity: 0.6 }]} onPress={onIniciar} disabled={loading}>
+        {loading ? <ActivityIndicator color={colors.white} size="small" /> : <Text style={st.recomBtnText}>Começar desafio</Text>}
       </TouchableOpacity>
     </View>
   );
 }
 
-// ─── Mini card de post (com navegação para perfil) ────────────
+// ─── Mini post ────────────────────────────────────────────────
 function MiniPost({ post }: { post: Post }) {
   const router = useRouter();
-
-  const navegarParaPerfil = () => {
-    router.push(`/perfil/${post.userId}`);
-  };
-
+  const navegarParaPerfil = () => router.push(`/perfil/${post.userId}`);
   return (
     <TouchableOpacity onPress={navegarParaPerfil} activeOpacity={0.7}>
       <View style={st.miniPost}>
-        <Avatar nome={post.nomeUsuario} size={34} />
+        <Avatar nome={post.nomeUsuario} fotoUrl={post.fotoUsuario} size={34} />
         <View style={{ flex: 1 }}>
           <Text style={st.miniPostNome}>{post.nomeUsuario}</Text>
           <Text style={st.miniPostTexto} numberOfLines={2}>{post.conteudo}</Text>
@@ -291,11 +231,10 @@ function MiniPost({ post }: { post: Post }) {
   );
 }
 
-// ─── Tela Home (Dashboard) ────────────────────────────────────
+// ─── Tela Home ────────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [conexoes, setConexoes] = useState(0);
@@ -305,7 +244,6 @@ export default function HomeScreen() {
   const [liga, setLiga] = useState<LigaInfo | null>(null);
   const [feed, setFeed] = useState<Post[]>([]);
   const [iniciando, setIniciando] = useState(false);
-
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
 
@@ -313,27 +251,18 @@ export default function HomeScreen() {
     try {
       const [conRes, todosDesafiosRes, dispRes, feedRes] = await Promise.all([
         conexaoService.listar(),
-        desafioService.meusTodosDesafios(), // NOVO endpoint
+        desafioService.meusTodosDesafios(),
         desafioService.listarDisponiveis(),
         postService.feedGlobal(0, 3),
       ]);
-      
       setConexoes(conRes.length);
-      
-      // Separa desafios ativos e concluídos
       const ativosFiltrados = todosDesafiosRes.filter(d => d.status === 'EM_ANDAMENTO');
       const concluidosFiltrados = todosDesafiosRes.filter(d => d.status === 'CONCLUIDO');
-      
       setAtivos(ativosFiltrados);
       setDesafiosConcluidos(concluidosFiltrados.length);
       setDisponiveis(dispRes);
       setFeed(feedRes);
-
-      try {
-        const ligaRes = await ligaService.minhaLiga();
-        setLiga(ligaRes);
-      } catch {}
-
+      try { const ligaRes = await ligaService.minhaLiga(); setLiga(ligaRes); } catch {}
       await refreshUser();
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
@@ -354,7 +283,6 @@ export default function HomeScreen() {
   const idsAtivos = new Set(ativos.map(a => a.desafioId));
   const recomendado = disponiveis.find(d => !idsAtivos.has(d.id)) ?? null;
   const desafioDestaque = ativos[0] ?? null;
-
   const hora = new Date().getHours();
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
   const primeiroNome = user?.nome?.split(' ')[0] ?? '';
@@ -387,16 +315,12 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={st.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-
-          {/* Header com avatar e XP */}
           <View style={st.hero}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Avatar nome={user?.nome ?? '?'} size={50} />
+              <Avatar nome={user?.nome ?? '?'} fotoUrl={user?.fotoUrl} size={50} />
               <View>
                 <Text style={st.heroGreeting}>{saudacao}, {primeiroNome}! 👋</Text>
                 <Text style={st.heroSub}>Continue evoluindo</Text>
@@ -409,35 +333,13 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Stats rápidos (4 cards) */}
           <View style={st.statsRow}>
-            <StatCard
-              icon={<IconUsers size={18} color={colors.secondary} />}
-              value={conexoes}
-              label="Conexões"
-              color={colors.secondary}
-            />
-            <StatCard
-              icon={<IconTarget size={18} color={colors.primary} />}
-              value={ativos.length}
-              label="Ativos"
-              color={colors.primary}
-            />
-            <StatCard
-              icon={<IconTrophy size={18} color={colors.accent} />}
-              value={liga?.ligaNome ?? '—'}
-              label="Liga"
-              color={colors.accent}
-            />
-            <StatCard
-              icon={<IconFlame size={18} color={colors.warning} />}
-              value={desafiosConcluidos}
-              label="Concluídos"
-              color={colors.warning}
-            />
+            <StatCard icon={<IconUsers size={18} color={colors.secondary} />} value={conexoes} label="Conexões" color={colors.secondary} />
+            <StatCard icon={<IconTarget size={18} color={colors.primary} />} value={ativos.length} label="Ativos" color={colors.primary} />
+            <StatCard icon={<IconTrophy size={18} color={colors.accent} />} value={liga?.ligaNome ?? '—'} label="Liga" color={colors.accent} />
+            <StatCard icon={<IconFlame size={18} color={colors.warning} />} value={desafiosConcluidos} label="Concluídos" color={colors.warning} />
           </View>
 
-          {/* Desafio em destaque */}
           {desafioDestaque && (
             <>
               <SectionHeader title="🎯 Em andamento" onPress={() => router.push('/(tabs)/desafios')} />
@@ -445,7 +347,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Liga atual */}
           {liga && (
             <>
               <SectionHeader title="🏆 Minha liga" onPress={() => router.push('/(tabs)/liga')} label="Ver ranking" />
@@ -453,7 +354,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Recomendação */}
           {recomendado && (
             <>
               <SectionHeader title="⚡ Recomendado para você" />
@@ -461,7 +361,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Feed recente */}
           {feed.length > 0 && (
             <>
               <SectionHeader title="📰 Feed recente" onPress={() => router.push('/(tabs)/feed')} />
@@ -480,7 +379,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          {/* Estado vazio */}
           {!desafioDestaque && !liga && feed.length === 0 && (
             <View style={st.emptyState}>
               <Text style={st.emptyEmoji}>🌱</Text>
@@ -491,7 +389,6 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           )}
-
           <View style={{ height: 20 }} />
         </Animated.View>
       </ScrollView>
@@ -499,71 +396,36 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Estilos (dark, moderno, arredondado) ─────────────────────
+// ─── Estilos (mantidos) ─────────────────────────────────────
 const st = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  loading: {
-    flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', gap: 12,
-  },
+  loading: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loadingText: { color: colors.textSecondary, fontSize: 14 },
   scroll: { paddingBottom: 24 },
-
-  hero: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16,
-  },
+  hero: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
   heroGreeting: { fontSize: 22, fontWeight: '700', color: colors.text },
   heroSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  xpBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: colors.accentMuted, paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 40, borderWidth: 1, borderColor: colors.accent + '44',
-  },
+  xpBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.accentMuted, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 40, borderWidth: 1, borderColor: colors.accent + '44' },
   xpText: { fontSize: 16, fontWeight: '700', color: colors.accent },
   xpLabel: { fontSize: 11, color: colors.accent + 'AA', fontWeight: '600' },
-
-  statsRow: {
-    flexDirection: 'row', gap: 12, paddingHorizontal: 20, marginBottom: 12,
-  },
-  statCard: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: 20,
-    padding: 12, alignItems: 'center', gap: 6,
-    borderWidth: 0, borderBottomWidth: 2,
-  },
+  statsRow: { flexDirection: 'row', gap: 12, paddingHorizontal: 20, marginBottom: 12 },
+  statCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 20, padding: 12, alignItems: 'center', gap: 6, borderWidth: 0, borderBottomWidth: 2 },
   statIconBg: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   statValue: { fontSize: 18, fontWeight: '800', color: colors.text },
   statLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '500' },
-
-  sectionHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, marginTop: 20, marginBottom: 12,
-  },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   sectionLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sectionLinkText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
-
-  challengeCard: {
-    backgroundColor: colors.surface, borderRadius: 24,
-    marginHorizontal: 20, padding: 16, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
-  },
+  challengeCard: { backgroundColor: colors.surface, borderRadius: 24, marginHorizontal: 20, padding: 16, gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   challengeCardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   challengeIconBg: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   challengeTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   challengeSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   challengePct: { fontSize: 18, fontWeight: '800' },
-
   progressBar: { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
-
-  ligaCard: {
-    backgroundColor: colors.surface, borderRadius: 24,
-    marginHorizontal: 20, padding: 16, gap: 12,
-    borderWidth: 1, borderColor: colors.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-  },
+  ligaCard: { backgroundColor: colors.surface, borderRadius: 24, marginHorizontal: 20, padding: 16, gap: 12, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   ligaCardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   ligaIconBg: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   ligaNome: { fontSize: 18, fontWeight: '700' },
@@ -571,13 +433,7 @@ const st = StyleSheet.create({
   ligaChevron: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   ligaVerMais: { fontSize: 13, fontWeight: '600' },
   ligaProgressText: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
-
-  recomCard: {
-    backgroundColor: colors.surface, borderRadius: 24,
-    marginHorizontal: 20, padding: 16, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
-  },
+  recomCard: { backgroundColor: colors.surface, borderRadius: 24, marginHorizontal: 20, padding: 16, gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   recomTop: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   recomIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   recomTitle: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
@@ -586,40 +442,23 @@ const st = StyleSheet.create({
   nivelText: { fontSize: 11, fontWeight: '700' },
   recomPontos: { fontSize: 12, color: colors.accent, fontWeight: '600' },
   recomDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  recomBtn: {
-    backgroundColor: colors.primary, borderRadius: 40,
-    paddingVertical: 14, alignItems: 'center',
-  },
+  recomBtn: { backgroundColor: colors.primary, borderRadius: 40, paddingVertical: 14, alignItems: 'center' },
   recomBtnText: { color: colors.background, fontWeight: '700', fontSize: 16 },
-
-  feedCard: {
-    backgroundColor: colors.surface, borderRadius: 24,
-    marginHorizontal: 20, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-  },
+  feedCard: { backgroundColor: colors.surface, borderRadius: 24, marginHorizontal: 20, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   miniPost: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 14 },
   miniPostNome: { fontSize: 14, fontWeight: '700', color: colors.text },
   miniPostTexto: { fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 18 },
   miniPostMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   miniPostCount: { fontSize: 12, color: colors.textSecondary },
   divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 14 },
-  feedVerMais: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.border,
-  },
+  feedVerMais: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.border },
   feedVerMaisText: { fontSize: 14, fontWeight: '600', color: colors.primary },
-
-  avatar: { backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  avatar: { backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarText: { fontWeight: '700', color: colors.primary },
-
   emptyState: { alignItems: 'center', paddingHorizontal: 32, paddingTop: 40, gap: 12 },
   emptyEmoji: { fontSize: 56 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
   emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
-  emptyBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14,
-    borderRadius: 40, marginTop: 8,
-  },
+  emptyBtn: { backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 40, marginTop: 8 },
   emptyBtnText: { color: colors.background, fontWeight: '700', fontSize: 16 },
 });

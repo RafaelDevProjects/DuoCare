@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator, Alert, Animated,
-  Easing, RefreshControl,
+  Easing, RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -80,16 +80,17 @@ function IconCheck({ size = 14, color = '#fff' }) {
   );
 }
 
-// ─── Avatar clicável ──────────────────────────────────────
-function Avatar({ nome, size = 44, onPress }: { nome: string; size?: number; onPress?: () => void }) {
+// ─── Avatar com foto ──────────────────────────────────────
+function Avatar({ nome, fotoUrl, size = 44, onPress }: { nome: string; fotoUrl?: string | null; size?: number; onPress?: () => void }) {
   const iniciais = nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
-  return (
-    <TouchableOpacity onPress={onPress} disabled={!onPress}>
-      <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Text style={[styles.avatarText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
-      </View>
-    </TouchableOpacity>
+  const conteudo = fotoUrl ? (
+    <Image source={{ uri: fotoUrl }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+  ) : (
+    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.avatarText, { fontSize: size * 0.38 }]}>{iniciais}</Text>
+    </View>
   );
+  return onPress ? <TouchableOpacity onPress={onPress}>{conteudo}</TouchableOpacity> : conteudo;
 }
 
 // ─── Item de conexão aceita ───────────────────────────────
@@ -106,7 +107,7 @@ function ItemConexao({ item, index, onRemover, onPressAvatar }: {
   }, []);
   return (
     <Animated.View style={[styles.itemCard, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
+      <Avatar nome={item.nome} fotoUrl={item.fotoUrl} size={48} onPress={() => onPressAvatar(item.userId)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <View style={styles.statusRow}>
@@ -145,7 +146,7 @@ function ItemPendente({ item, index, onAceitar, onRecusar, onPressAvatar }: {
   async function handleRecusar() { setLoadingRecusar(true); await onRecusar(item.id); setLoadingRecusar(false); }
   return (
     <Animated.View style={[styles.itemCard, styles.itemCardPendente, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
+      <Avatar nome={item.nome} fotoUrl={item.fotoUrl} size={48} onPress={() => onPressAvatar(item.userId)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <View style={styles.statusRow}>
@@ -165,7 +166,7 @@ function ItemPendente({ item, index, onAceitar, onRecusar, onPressAvatar }: {
   );
 }
 
-// Item de solicitação enviada (pendente) com botão cancelar
+// ─── Item de solicitação enviada (pendente) ──────────────
 function ItemEnviado({ item, index, onCancelar, onPressAvatar }: {
   item: Conexao; index: number; onCancelar: (receptorId: number) => void; onPressAvatar: (userId: number) => void;
 }) {
@@ -185,7 +186,7 @@ function ItemEnviado({ item, index, onCancelar, onPressAvatar }: {
   }
   return (
     <Animated.View style={[styles.itemCard, styles.itemCardEnviado, { opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}>
-      <Avatar nome={item.nome} size={48} onPress={() => onPressAvatar(item.userId)} />
+      <Avatar nome={item.nome} fotoUrl={item.fotoUrl} size={48} onPress={() => onPressAvatar(item.userId)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         <View style={styles.statusRow}>
@@ -214,7 +215,7 @@ function ItemBusca({ item, onConectar, jaSolicitado, onPressAvatar }: {
   }
   return (
     <Animated.View style={[styles.itemBusca, { transform: [{ scale: scaleAnim }] }]}>
-      <Avatar nome={item.nome} size={44} onPress={() => onPressAvatar(item.id)} />
+      <Avatar nome={item.nome} fotoUrl={item.fotoUrl} size={44} onPress={() => onPressAvatar(item.id)} />
       <View style={styles.itemInfo}>
         <Text style={styles.itemNome}>{item.nome}</Text>
         {item.bio ? (
@@ -295,7 +296,6 @@ export default function ConexoesScreen() {
       setPendentes(penRes);
       setEnviadas(envRes);
       
-      // IDs de usuários que não podem receber nova solicitação
       const idsIndisponiveis = new Set<number>();
       conRes.forEach(c => idsIndisponiveis.add(c.userId));
       penRes.forEach(p => idsIndisponiveis.add(p.userId));
@@ -338,7 +338,6 @@ export default function ConexoesScreen() {
     setBuscando(true);
     try {
       const resultado = await conexaoService.buscar(termoBusca.trim());
-      // Filtra o próprio usuário e aqueles que já são conexões ou têm pendência
       const filtrados = resultado.filter(u => 
         u.id !== user?.userId && !solicitados.has(u.id)
       );
@@ -351,19 +350,17 @@ export default function ConexoesScreen() {
   }
 
   async function handleConectar(userId: number) {
-    // Marca imediatamente como pendente
     setSolicitados(prev => new Set([...prev, userId]));
     try {
       await conexaoService.solicitar(userId);
       Alert.alert('Solicitação enviada!', 'Aguarde a pessoa aceitar.');
-      await carregar(); // recarrega para sincronizar
+      await carregar();
     } catch (error: any) {
       if (error.response?.status === 409) {
         Alert.alert('Aviso', 'Já existe uma solicitação pendente entre vocês.');
         await carregar();
       } else {
         Alert.alert('Erro', error.response?.data?.mensagem || 'Erro ao enviar solicitação.');
-        // Remove a marcação local se erro não for 409
         setSolicitados(prev => {
           const newSet = new Set(prev);
           newSet.delete(userId);
@@ -489,7 +486,7 @@ export default function ConexoesScreen() {
               <ItemBusca
                 item={item}
                 onConectar={handleConectar}
-                jaSolicitado={false} // já não aparecem na lista se forem pendentes
+                jaSolicitado={false}
                 onPressAvatar={goToPerfil}
               />
             )}
@@ -523,7 +520,6 @@ export default function ConexoesScreen() {
   );
 }
 
-// ─── Estilos (mantidos iguais) ────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -611,7 +607,7 @@ const styles = StyleSheet.create({
   btnConectarDisabled: { backgroundColor: colors.border },
   btnConectarText: { color: colors.white, fontSize: 13, fontWeight: '700' },
   btnConectarTextDisabled: { color: colors.textSecondary },
-  avatar: { backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center' },
+  avatar: { backgroundColor: colors.primaryMuted, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarText: { fontWeight: '700', color: colors.primary },
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 10 },
   emptyMascote: { width: 130, height: 130 },
