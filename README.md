@@ -16,14 +16,6 @@
   <img src="https://img.shields.io/badge/WebSocket-STOMP-purple" />
 </p>
 
-## 👥 Integrantes
-
-| Nome | RM |
-|---|---|
-| Rafael Almeida | RM554019 |
-| Giovanna Franco | RM553701 |
-| Rafael Jorge | RM552765 |
-
 ---
 
 ## Sobre o Projeto
@@ -42,22 +34,10 @@ O **DuoCare** é um aplicativo desenvolvido para a empresa de convênios médico
 ## Estrutura do Repositório
 
 ```
-careplus/
+DuoCare/
 ├── api/careplus/careplus   ← Backend Java Spring Boot
 └── app/duocare-app         ← Frontend React Native (Expo)
 ```
-
----
-
-## Como Executar
-
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/RafaelDevProjects/DuoCare/tree/sprint_4
-```
-
-### 2. Execute o Backend (API) antes de iniciar o app mobile
 
 ---
 
@@ -67,10 +47,73 @@ git clone https://github.com/RafaelDevProjects/DuoCare/tree/sprint_4
 |---|---|
 | Java | 21+ |
 | Maven | 3.9+ |
-| Oracle Database | FIAP: `oracle.fiap.com.br:1521/orcl` |
 | Node.js | 18+ |
 | npm ou yarn | — |
 | Expo Go (celular) **ou** Android Emulator | — |
+
+---
+
+## 🚀 Como Executar
+
+### 1. Clone o repositório
+
+```bash
+git clone https://github.com/RafaelDevProjects/DuoCare/tree/sprint_4
+cd DuoCare
+```
+
+### 2. Configure o Backend
+
+Acesse a pasta do backend:
+
+```bash
+cd api/careplus/careplus
+```
+
+Edite o arquivo `src/main/resources/application.properties` e informe apenas as credenciais do banco Oracle na nuvem (fornecidas pelo desenvolvedor):
+
+```properties
+spring.datasource.username=RM_DO_ALUNO
+spring.datasource.password=SENHA_DO_BANCO
+```
+
+> O banco já possui todas as tabelas e dados iniciais — não é necessário executar nenhum script SQL.
+
+### 3. Execute o Backend
+
+```bash
+mvn spring-boot:run
+```
+
+Aguarde a mensagem `Started CareplusApplication`. A API estará disponível em:
+
+- **API:** `http://localhost:8080`
+- **Swagger UI:** `http://localhost:8080/swagger-ui/index.html`
+
+> No Swagger, clique em **Authorize 🔒**, cole o token retornado pelo login e todos os endpoints protegidos passarão a funcionar.
+
+### 4. Execute o Frontend (Mobile)
+
+Abra um novo terminal e vá para a pasta do app:
+
+```bash
+cd app/duocare-app
+```
+
+Instale as dependências (se necessário):
+
+```bash
+npm install
+```
+
+Inicie o Expo:
+
+```bash
+npx expo start --clear
+```
+
+- Pressione `a` no terminal para abrir automaticamente no emulador Android.
+- Ou instale o **Expo Go** no celular e escaneie o QR Code para testar no dispositivo físico.
 
 ---
 
@@ -90,32 +133,6 @@ git clone https://github.com/RafaelDevProjects/DuoCare/tree/sprint_4
 | Lombok | 1.18.x | Redução de boilerplate |
 | Springdoc OpenAPI | 2.8.6 | Documentação Swagger UI |
 | Spring WebSocket | 7.x | Suporte a STOMP |
-
-### Configuração
-
-Edite `src/main/resources/application.properties`:
-
-```properties
-spring.datasource.url=jdbc:oracle:thin:@oracle.fiap.com.br:1521/orcl
-spring.datasource.username=SEU_RM
-spring.datasource.password=SUA_SENHA
-```
-
-### Executando a API
-
-```bash
-# Acesse a pasta do backend
-cd api/careplus/careplus
-
-# Execute com Maven
-mvn spring-boot:run
-```
-
-A API estará disponível em: `http://localhost:8080`
-
-**Swagger UI:** `http://localhost:8080/swagger-ui/index.html`
-
-> No Swagger, clique em **Authorize 🔒**, cole o token retornado pelo login e todos os endpoints protegidos passarão a funcionar.
 
 ### Estrutura de Pastas
 
@@ -192,23 +209,6 @@ careplus-api/
 | expo-secure-store | 14.x | Armazenamento seguro do token JWT |
 | react-native-svg | 15.x | Ícones vetoriais customizados |
 
-### Executando o App Mobile
-
-```bash
-# Entre na pasta do app
-cd app/duocare-app
-
-# Instale as dependências
-npm install
-
-# Inicie o servidor de desenvolvimento
-npx expo start --clear
-```
-
-Após iniciar:
-- Pressione `a` → abre no emulador Android
-- Pressione `i` → abre no simulador iOS
-
 ### Estrutura de Pastas
 
 ```
@@ -244,7 +244,7 @@ duocare-app/
 │   └── theme/
 │       └── colors.ts            ← Paleta de cores da marca
 ├── assets/
-│   ├── mascote.png              ← Mascote 3D do Care Plus
+│   ├── mascote.png              ← Mascote 3D do DuoCare
 │   └── ...
 ├── app.json                     ← Configuração Expo
 └── package.json
@@ -711,23 +711,6 @@ Todos os erros seguem o formato padrão do `GlobalExceptionHandler`:
 
 ---
 
-## 🗄️ Banco de Dados — Oracle
-
-Execute o script `careplus_oracle_schema.sql` no SQL Developer ou via terminal para criar as tabelas:
-
-```sql
--- Principais tabelas criadas:
--- CP_USERS, CP_LIGAS, CP_CATEGORIAS_DESAFIO, CP_DESAFIOS
--- CP_USER_DESAFIOS, CP_CONEXOES, CP_POSTS, CP_CURTIDAS
--- CP_COMENTARIOS, CP_HISTORICO_PONTOS
-
--- Seeds já incluídos no script:
--- 6 ligas: Bronze, Prata, Ouro, Platina, Diamante, Safira
--- 4 categorias: CORRIDA, HIDRATACAO, MEDITACAO, NUTRICAO
-```
-
----
-
 ## 🧪 Testando com Postman
 
 Importe o arquivo `careplus_postman_collection.json` no Postman:
@@ -739,5 +722,14 @@ Importe o arquivo `careplus_postman_collection.json` no Postman:
 
 ---
 
+## 👥 Integrantes
 
-<p align="center">Desenvolvido com ❤️ para o DuoCare — FIAP 2026</p>
+| Nome | RM |
+|---|---|
+| Rafael Almeida | RM554019 |
+| Giovanna Franco | RM553701 |
+| Rafael Jorge | RM552765 |
+
+---
+
+<p align="center">Desenvolvido com ❤️ para o DuoCare — FIAP 2024</p>
