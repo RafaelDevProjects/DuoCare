@@ -719,6 +719,11 @@ Importe o arquivo `careplus_postman_collection.json` no Postman:
 2. Execute **Register** para criar um usuário
 3. Execute **Login** — o token é salvo automaticamente na variável `{{token}}`
 4. Todos os outros endpoints já usam `{{token}}` nos headers automaticamente
+   
+---
+
+## ⚠️ Atenção
+Este projeto não utiliza a disciplina de Internet das Coisas (IoT) no aplicativo mobile. Essa decisão foi conversada e aprovada previamente com o professor Anderson da Silva, considerando que a aplicação do conceito de IoT não apresentava viabilidade prática para os objetivos do DuoCare, que são focados em engajamento, desafios e interação social. Dessa forma, mantivemos o escopo alinhado às funcionalidades propostas, garantindo a melhor experiência para os usuários.
 
 ---
 
@@ -732,4 +737,4 @@ Importe o arquivo `careplus_postman_collection.json` no Postman:
 
 ---
 
-<p align="center">Desenvolvido com ❤️ para o DuoCare — FIAP 2024</p>
+<p align="center">Desenvolvido com ❤️ para o Plus CARE — FIAP 2026</p>
